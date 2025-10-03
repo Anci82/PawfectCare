@@ -19,11 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('DJANGO_SECRET_KEY')
 DEBUG = False  # Must be False in production
 
-ALLOWED_HOSTS = [
-    '127.0.0.1',
-    'localhost',
-    'pets-production-1234.up.railway.app',  # replace with your live domain
-]
+ALLOWED_HOSTS = ["*"]
 
 # ----------------------------
 # INSTALLED APPS
