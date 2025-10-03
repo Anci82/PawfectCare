@@ -13,6 +13,7 @@ import requests
 import base64
 from django.views.decorators.http import require_POST
 import os
+from decouple import config
 
 
 
@@ -235,7 +236,7 @@ from django.views.decorators.http import require_POST
 # --- Configuration ---
 # It is best practice to secure your API key as an environment variable.
 # The key for Gemini is passed as a query parameter in the URL.
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyBFHWYFnD9hIwCrZKJRjT_w_pSDl6Y4Zg0")
+GEMINI_API_KEY = config("GEMINI_API_KEY")
 GEMINI_MODEL_NAME = "gemini-2.5-flash-preview-05-20" # A fast and capable model
 
 def call_gemini_model(prompt):
