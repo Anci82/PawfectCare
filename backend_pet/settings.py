@@ -1,11 +1,8 @@
-"""
-Django settings for backend_pet project (production-ready).
-"""
+# backend_pet/settings.py
 
 from pathlib import Path
 import os
 import dj_database_url
-from decouple import config
 
 # ----------------------------
 # BASE DIR
@@ -15,10 +12,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ----------------------------
 # SECRET KEY & DEBUG
 # ----------------------------
-SECRET_KEY = config('DJANGO_SECRET_KEY')  # from Railway env
-DEBUG = config('DEBUG', default=False, cast=bool)
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']  # from Railway env
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ["*"]  # can restrict to your Railway domain later
+ALLOWED_HOSTS = ["*"]  # later you can restrict to your Railway domain
 
 # ----------------------------
 # INSTALLED APPS
@@ -72,28 +69,15 @@ ROOT_URLCONF = 'backend_pet.urls'
 WSGI_APPLICATION = 'backend_pet.wsgi.application'
 
 # ----------------------------
-# DATABASE
+# DATABASE (always use DATABASE_URL)
 # ----------------------------
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
-if DATABASE_URL:
-    # Production (Railway)
-    DATABASES = {
-        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600, ssl_require=True)
-    }
-else:
-    # Local development
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME'),
-            'USER': config('DB_USER'),
-            'PASSWORD': config('DB_PASSWORD'),
-            'HOST': config('DB_HOST'),
-            'PORT': '5432',
-            'OPTIONS': {'sslmode': 'require'},
-        }
-    }
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ['DATABASE_URL'],
+        conn_max_age=600,
+        ssl_require=True
+    )
+}
 
 # ----------------------------
 # PASSWORD VALIDATION
