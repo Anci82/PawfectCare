@@ -2,7 +2,31 @@
 
 from pathlib import Path
 import os
+import socket
 import dj_database_url
+
+# ----------------------------
+# FORCE IPv4 (Render + Supabase fix)
+# ----------------------------
+# This ensures psycopg2 connects using IPv4 instead of IPv6
+def force_ipv4():
+    old_getaddrinfo = socket.getaddrinfo
+    def new_getaddrinfo(*args, **kwargs):
+        return [info for info in old_getaddrinfo(*args, **kwargs) if info[0] == socket.AF_INET]
+    socket.getaddrinfo = new_getaddrinfo
+
+force_ipv4()
+
+# Optional: Replace hostname with IPv4 address (extra safety)
+try:
+    host_ipv4 = socket.getaddrinfo(
+        "db.iugbvsnkycoqugukabev.supabase.co", 5432, socket.AF_INET
+    )[0][4][0]
+    os.environ["DATABASE_URL"] = os.environ["DATABASE_URL"].replace(
+        "db.iugbvsnkycoqugukabev.supabase.co", host_ipv4
+    )
+except Exception as e:
+    print("IPv4 patch warning:", e)
 
 # ----------------------------
 # BASE DIR
@@ -12,10 +36,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ----------------------------
 # SECRET KEY & DEBUG
 # ----------------------------
-SECRET_KEY = os.environ['DJANGO_SECRET_KEY']  # from Railway env
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ["*"]  # later you can restrict to your Railway domain
+# ALLOWED_HOSTS: use Render domain after deployment
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
 # ----------------------------
 # INSTALLED APPS
@@ -69,20 +94,11 @@ ROOT_URLCONF = 'backend_pet.urls'
 WSGI_APPLICATION = 'backend_pet.wsgi.application'
 
 # ----------------------------
-# DATABASE (always use DATABASE_URL)
+# DATABASE (Supabase via DATABASE_URL)
 # ----------------------------
-import socket
-
-def force_ipv4():
-    old_getaddrinfo = socket.getaddrinfo
-    def new_getaddrinfo(*args, **kwargs):
-        return [info for info in old_getaddrinfo(*args, **kwargs) if info[0] == socket.AF_INET]
-    socket.getaddrinfo = new_getaddrinfo
-
-force_ipv4()
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ['DATABASE_URL'],
+        default=os.environ.get('DATABASE_URL'),
         conn_max_age=600,
         ssl_require=True
     )
@@ -111,7 +127,7 @@ USE_TZ = True
 # ----------------------------
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # for collectstatic
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -119,7 +135,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # ----------------------------
 # SECURITY SETTINGS (HTTPS)
 # ----------------------------
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False') == 'True'
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 X_FRAME_OPTIONS = 'DENY'
