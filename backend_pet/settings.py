@@ -71,6 +71,15 @@ WSGI_APPLICATION = 'backend_pet.wsgi.application'
 # ----------------------------
 # DATABASE (always use DATABASE_URL)
 # ----------------------------
+import socket
+
+def force_ipv4():
+    old_getaddrinfo = socket.getaddrinfo
+    def new_getaddrinfo(*args, **kwargs):
+        return [info for info in old_getaddrinfo(*args, **kwargs) if info[0] == socket.AF_INET]
+    socket.getaddrinfo = new_getaddrinfo
+
+force_ipv4()
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ['DATABASE_URL'],
