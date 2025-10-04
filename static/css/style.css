@@ -316,13 +316,15 @@ header .header-right button:hover {
 }
 
 .welcome-text {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     z-index: 2;
-    color: white;
     max-width: 700px;
-    padding: 1rem;
-    
-    
+    color: white;
+    text-align: center;
+    padding: 1rem;    
 }
 
 .welcome-text h2 {

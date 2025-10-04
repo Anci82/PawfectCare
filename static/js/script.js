@@ -9,6 +9,9 @@ const headerRight = document.getElementById("headerRight");
 const welcomeSection = document.getElementById("welcomeSection");
 const dashboardSection = document.getElementById("dashboard");
 const petIdInput = document.getElementById("petId");
+// HIDE RESET ALL DATA SECTION
+const resetWrapper = document.getElementById("resetWrapper");
+if (resetWrapper) resetWrapper.style.display = "none";
 
 // const validUser = { username: 'admin', password: 'admin' };
 
