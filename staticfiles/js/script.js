@@ -212,8 +212,10 @@ function displayPetInfo() {
     petInfoDisplay.style.display = "none";
     rightBoxes.style.display = "none";
     document.getElementById("logHistoryDisplay").style.display = "none";
+    backPetBtn.style.display = 'none';
     return;
   }
+  backPetBtn.style.display = 'inline-block';
   document.getElementById("petId").value = petInfo.id || "";
   petInfoContent.innerHTML = `
       <strong>Type:</strong> ${petInfo.type}<br>
@@ -856,6 +858,7 @@ const showLogFormBtn = document.getElementById("showLogFormBtn");
 const showAIFormBtn = document.getElementById("showAIFormBtn");
 const exitLogBtn = document.getElementById("exitLogBtn");
 const exitAIBtn = document.getElementById("exitAIBtn");
+const backPetBtn = document.getElementById('exitPetInfoBtn');
 
 dailyLogWrapper.style.display = "none";
 aiSection.style.display = "none";
@@ -880,6 +883,23 @@ exitLogBtn.addEventListener("click", () => {
   editIndex = null; // cancel any editing
   displayPetInfo();
   displayLogs();
+});
+backPetBtn.addEventListener('click', () => {
+    // Cancel editing
+    editIndex = null;
+
+    // Restore form values from saved petInfo
+    petType.value = petInfo.type || '';
+    document.getElementById('petName').value = petInfo.name || '';
+    document.getElementById('petAge').value = petInfo.age || '';
+    document.getElementById('weight').value = petInfo.weight || '';
+    breedSelect.value = petInfo.breed || '';
+    document.getElementById('surgeryType').value = petInfo.surgeryType || '';
+    document.getElementById('surgeryReason').value = petInfo.surgeryReason || '';
+
+    petInfoWrapper.style.display = 'none';
+    displayPetInfo();
+    displayLogs();
 });
 exitAIBtn.addEventListener("click", () => {
   aiSection.style.display = "none";
