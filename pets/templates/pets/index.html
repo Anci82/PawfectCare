@@ -117,7 +117,18 @@
 
             <!-- PET INFO FORM -->
             <section class="container" id="petInfoWrapper">
-              <h2>🐶🐱 Pet General Info (Fill Once)</h2>
+              <button type="button" class="exit-btn primary-btn" id="exitPetInfoBtn">← Back</button>
+              <h2> Pet General Info </h2>
+              <div class="petinfo-flex">
+                <!-- RIGHT SIDE: IMAGE + TEXT -->
+                <div class="petinfo-side">
+                  <p>
+                    Keep your pet’s info safe here! 💕 <br>
+                    Add details once and track recovery progress with ease.
+                  </p>
+                  <img src="{% static 'images/tag7.png' %}" alt="Happy pets" />
+                </div>
+                <!-- LEFT SIDE: FORM -->
               <form id="petInfoForm">
                 {% csrf_token %}
                 <div class="field-group">
@@ -177,7 +188,9 @@
                   </button>
                 </div>
               </form>
+              </div>
             </section>
+
             <!-- DAILY LOGS -->
             <section class="container" id="dailyLogWrapper">
               <button
@@ -187,8 +200,21 @@
               >
                 ← Back
               </button>
+
               <h2>🗓 Daily Recovery Log</h2>
+              <div class="petinfo-flex">
+                <!-- RIGHT SIDE: IMAGE + TEXT -->
+                <div class="petinfo-side">
+                  <p>
+                    Log your pet's daily recovery details here! 💕 <br><br>
+                    Track food, meds, energy, and notes easily.
+                  </p>
+                  <hr>
+                  <img src="{% static 'images/logs3.png' %}" alt="Happy pets" />
+                </div>
+                <!-- LEFT SIDE: FORM -->
               <form id="logForm">
+                {% csrf_token %}
                 <div class="field-group">
                   <input type="hidden" id="petId" name="pet" value="" />
                   <label for="date">Date of Entry</label>

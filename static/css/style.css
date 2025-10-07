@@ -27,6 +27,9 @@ textarea {
 /* ============================
    PRIMARY BUTTONS (ALL)
 ============================ */
+.container.reset-wrapper {
+    display: none !important;
+}
 button.primary-btn {
     background-color: rgb(149, 183, 199); /* same as header/footer */
     color: white;
@@ -531,35 +534,193 @@ header .header-right button:hover {
     box-shadow: 0 3px 6px rgba(0,0,0,0.1);
     background: linear-gradient(135deg, #dfdad0, rgb(149, 183, 199));
 }
-#dailyLogWrapper,
-#petInfoWrapper {
-  max-width: 600px;          /* smaller width */
-  margin: 2rem auto;         /* centers horizontally + some top/bottom space */
-  padding: 1.5rem;           /* breathing room inside */
-  background: linear-gradient(135deg, #dfdad0, rgb(149, 183, 199));
-  border-radius: 12px;       /* rounded edges */
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* soft shadow */
-
+/* ============================
+   PET INFO FORM TWO-COLUMN LAYOUT
+============================ */
+.petinfo-side {
+    flex: 1 1 60%;              /* fills 60% of the row but can grow/shrink */
+    display: flex;
+    flex-direction: column;     /* stack content vertically */
+    justify-content: space-around;
+    align-items: center;    /* center content vertically */       /* center content horizontally */
+    text-align: center;
+    padding: 0.5rem 1rem;
+    min-height: 550px;       /* ensures it has some vertical height */
+    height: auto;            /* let content define height if bigger */
+    width: 100%; 
+           
 }
+.petinfo-flex {
+  display: flex;
+  justify-content: center;       /* center the entire group */
+  align-items: flex-start;
+  gap: 1rem;                     /* closer together */
+  max-width: 850px;              /* control overall width */
+  margin: 0 auto;                /* center it horizontally */
+  flex-wrap: wrap;
+}
+/* This targets only the pet info wrapper */
+#petInfoWrapper, #dailyLogWrapper {
+    max-width: 900px;       /* smaller than other containers */
+    margin: 1.5rem auto;    /* center horizontally with some vertical spacing */
+    padding: 1rem 1rem;     /* smaller padding */
+    border-radius: 10px;
+    /* background: linear-gradient(135deg, #dfdad0, rgb(149, 183, 199)); */
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    background: rgb(245, 243, 242, 0.8);
+    
+}
+
+#petInfoWrapper h2, #dailyLogWrapper h2 {
+    text-align: center;
+    font-family: 'Alex Brush', cursive;
+    font-weight: 700;
+    font-style: normal;
+    font-size: 3rem;
+    color:indianred
+}
+#petInfoForm {
+  flex: 1 1 30%;
+}
+
+
+.petinfo-side img {
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  margin-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.petinfo-side p {
+  font-size: 1.5rem;
+  color: #5e5b58;
+  /* background-color: rgba(255,255,255,0.7); */
+  border-radius: 8px;
+  padding: 1rem 3rem;
+}
+
+/* Shrink those chunky input fields! */
+#petInfoForm input,
+#petInfoForm select,
+#petInfoForm textarea {
+  width: 80%;
+  max-width: 280px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.9rem;
+ 
+    font-family: "Indie Flower", cursive;
+    font-weight: 700;
+    font-style: normal;
+    text-align: center;
+}
+
+/* Center the form a bit better */
+#petInfoForm .field-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+#petInfoForm label{
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: rgb(114, 110, 110);
+}
+
+#petInfoForm button, #add-log-btn {
+    color: white;
+    background-color: indianred !important
+}
+/* Use same petinfo-flex and petinfo-side */
+#dailyLogWrapper .petinfo-flex {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
+#dailyLogWrapper .petinfo-side {
+  flex: 1 1 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  text-align: center;
+  padding: 0.5rem 1rem;
+  min-height: 550px;
+  height: auto;
+  width: 100%;
+}
+
+#dailyLogWrapper form {
+  flex: 1 1 40%;
+}
+
+/* Shrink inputs & selects */
+#dailyLogWrapper input,
+#dailyLogWrapper select,
+#dailyLogWrapper textarea {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.9rem;
+  font-family: "Indie Flower", cursive;
+  font-weight: 700;
+  font-style: normal;
+  text-align: center;
+}
+
+/* Labels */
+#dailyLogWrapper label {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: grey;
+}
+
+/* Buttons */
+#dailyLogWrapper button {
+  color: white;
+  background-color: rgb(120, 155, 170);
+}
+.exit-btn.primary-btn{
+    background-color:indianred !important;
+}
+
+/* ?PET INFO CONTAINER */
 #petInfoContent {
-    padding: 1rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* left column = labels, right = values */
+    gap: 0.5rem 1rem; /* vertical & horizontal spacing */
+    max-width: 300px;  /* sidebar-friendly */
+    padding: 1rem;
     border-radius: 10px;
     box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    line-height: 1.6; /* more breathing room */
-    font-size: 1.05rem;
-    margin-bottom: 1rem;
-    font-size: 1.2rem;   
+    font-weight: bold;
+    color: black;
+
 }
+
 #petInfoContent strong {
-    color: #1b3e7d; /* slightly darker accent */
-    display: inline-block;
-    width: 120px; /* align values neatly */
-    font-size: 1rem;
+    grid-column: 1;   /* labels go in left column */
+    color: rgb(87, 84, 84);
+    font-weight: 600;
+}
+
+/* hide any <br> added by JS */
+#petInfoContent br {
+    display: none;
 }
 
 #petInfoContent button {
     margin-top: 0.8rem;
     align-self: flex-start;
+}
+.petValue {
+    font-weight: bold;
+    color: red;
 }
 /* ============================
    LOG ENTRIES DISPLAY
@@ -626,13 +787,36 @@ header .header-right button:hover {
 ============================ */
 .med-row {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.3rem;
     margin-bottom: 0.5rem;
+    
 }
 
 .med-row input {
     flex: 1;
+
+    
 }
+/* Override specific ones */
+.med-row input:nth-child(1) {
+  flex: 1.3; /* or 3 if you want it bigger */
+}
+
+.med-row input:nth-child(2),
+.med-row input:nth-child(3) {
+  flex: 1;
+}
+.med-row input::placeholder {
+  font-size: 0.7rem;
+  color:black   
+      
+}
+#add-med, #add-log-btn {
+    border-radius: 8px;
+    display: block;
+    margin: 1rem auto 1rem auto;    
+}
+
 
 /* ============================
    LOG HISTORY TITLE
@@ -648,17 +832,23 @@ header .header-right button:hover {
    COPY ALL BUTTON
 ============================ */
 #copyAllBtn {
-    background-color: #1b3e7d;
-    color: white;
-    border-radius: 6px;
-    padding: 0.5rem 1rem;
+    color: rgb(235, 229, 229) !important;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
     font-weight: bold;
-    margin-bottom: 1rem;
     cursor: pointer;
+    display: block;
+    margin: 1rem auto 2rem auto; /* centers horizontally */
+    text-align: center;
+    font-size: 1rem;
+    transition: all 0.2s ease;
 }
 
+/* Hover effect */
 #copyAllBtn:hover {
-    background-color: #14518c;
+    background-color: #1d46cc;
+    transform: scale(1.05);
 }
 
 
@@ -671,7 +861,7 @@ input[type="date"],
 select,
 textarea {
     width: 100%;
-    padding: 0.5rem;
+    padding: 1rem;
     margin: 0.3rem 0 0.7rem 0;
     border-radius: 5px;
     border: 1px solid #ccc;
