@@ -694,7 +694,8 @@ header .header-right button:hover {
     display: grid;
     grid-template-columns: 1fr 1fr; /* left column = labels, right = values */
     gap: 0.5rem 1rem; /* vertical & horizontal spacing */
-    max-width: 300px;  /* sidebar-friendly */
+    width: 100%;
+    max-width: 1200px;  /* sidebar-friendly */
     padding: 1rem;
     border-radius: 10px;
     box-shadow: 0 3px 8px rgba(0,0,0,0.1);

@@ -226,7 +226,7 @@ function displayPetInfo() {
     <strong>Surgery:</strong> ${petInfo.surgery_type || "—"}<br>
     <strong>Surgery Date:</strong> ${petInfo.surgery_date || "—"}<br>
     <strong>Reason / Notes:</strong> ${petInfo.surgery_reason || "—"}<br>
-    <button type="button" id="editPetInfo" class="primary-btn">Edit Pet Info</button>
+    <button type="button" id="editPetInfo" class="primary-btn">Edit</button>
     `;
 
   petInfoWrapper.style.display = "none";
