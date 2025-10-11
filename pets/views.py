@@ -14,6 +14,7 @@ import base64
 from django.views.decorators.http import require_POST
 import os
 from decouple import config
+from django.views.decorators.http import require_http_methods
 
 
 
@@ -212,6 +213,59 @@ def pet_logs_json(request, pet_id):
         })
 
     return JsonResponse({'success': True, 'logs': logs})
+
+@login_required
+@csrf_exempt  # remove in production, use proper CSRF headers
+@require_http_methods(["PUT", "POST"])  # allow PUT and fallback POST
+def ajax_update_log(request, log_id):
+    try:
+        log = DailyLog.objects.get(id=log_id, pet__owner=request.user)
+    except DailyLog.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Log not found"}, status=404)
+
+    # Because Django doesn't parse PUT automatically like POST, we need to use request.POST only if it's POST
+    # If it's PUT, request.body contains the raw data
+    if request.method == "PUT":
+        from django.http import QueryDict
+        put_data = QueryDict(request.body)
+        data = put_data.copy()
+        files = request.FILES
+    else:
+        data = request.POST
+        files = request.FILES
+
+    # Update fields
+    log.date = parse_date(data.get("date")) or log.date
+    log.food = data.get("food", log.food)
+    log.energy = data.get("energy", log.energy)
+    log.notes = data.get("notes", log.notes)
+    
+    # Handle photo
+    photo = files.get("photo")
+    if photo:
+        log.photo = photo
+
+    log.save()
+
+    # Update medications
+    meds_data = json.loads(data.get("medications", "[]"))
+    # Delete old meds and create new ones
+    log.meds.all().delete()
+    for m in meds_data:
+        if m.get("name"):
+            Medication.objects.create(
+                log=log,
+                name=m['name'],
+                dosage=int(m.get('dosage') or 0),
+                times=int(m.get('times') or 0)
+            )
+
+    return JsonResponse({
+        "success": True,
+        "id": log.id,
+        "photo_url": log.photo.url if log.photo else None
+    })
+
 @csrf_exempt
 def ajax_delete_log(request, log_id):
     if request.method == "POST":

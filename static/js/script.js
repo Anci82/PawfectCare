@@ -522,7 +522,7 @@ function setupEditDelete() {
 
 }
 
-// Submit log
+// Submit/ edit log
 logForm.addEventListener("submit", e => {
   e.preventDefault();
 
@@ -530,7 +530,6 @@ logForm.addEventListener("submit", e => {
   const logDate = new Date(logDateInput);
   const surgeryDate = petInfo.surgery_date ? new Date(petInfo.surgery_date) : null;
 
-  // Check surgery date
   if (surgeryDate && logDate < surgeryDate) {
     return showNotification("Log date cannot be before surgery date", "error");
   }
@@ -555,40 +554,44 @@ logForm.addEventListener("submit", e => {
     formData.append("medications", JSON.stringify(meds));
     formData.append("csrfmiddlewaretoken", getCookie("csrftoken"));
 
-    const sendForm = () => {
-      fetch("/ajax-create-log/", { method: "POST", body: formData })
+    if (photoData) {
+      fetch(photoData)
+        .then(res => res.blob())
+        .then(blob => {
+          formData.append("photo", blob, file.name);
+          sendLogRequest();
+        });
+    } else {
+      sendLogRequest();
+    }
+
+    function sendLogRequest() {
+      const isEdit = editIndex !== null;
+      const url = isEdit ? `/ajax-update-log/${logs[editIndex].id}/` : "/ajax-create-log/";
+      const method = isEdit ? "PUT" : "POST";
+
+      fetch(url, { method, body: formData })
         .then(res => res.json())
         .then(data => {
           if (!data.success) return showNotification("Error: " + JSON.stringify(data.errors));
 
-          // Build new log, merging old values if editing
-          let newLog = {
-            id: data.id,
+          const newLog = {
+            id: isEdit ? logs[editIndex].id : data.id,
             date: logDateInput,
             food: document.getElementById("food").value,
             energy: document.getElementById("energy").value,
             notes: document.getElementById("notes").value,
             meds: meds.length ? meds : [],
-            photo: data.photo_url ?? (editIndex !== null ? logs[editIndex]?.photo : null),
+            photo: data.photo_url ?? (isEdit ? logs[editIndex]?.photo : null),
           };
 
-          if (editIndex !== null) {
-            // Merge old meds and notes if user left them blank
-            const oldLog = logs[editIndex];
-            newLog = {
-              ...oldLog,
-              ...newLog,
-              meds: meds.length ? meds : oldLog.meds,
-              notes: document.getElementById("notes").value || oldLog.notes,
-              photo: data.photo_url ?? oldLog.photo,
-            };
+          if (isEdit) {
             logs[editIndex] = newLog;
             editIndex = null;
           } else {
             logs.push(newLog);
           }
 
-          // Save and display
           localStorage.setItem("petLogs", JSON.stringify(logs));
           displayLogs();
           logForm.reset();
@@ -606,23 +609,13 @@ logForm.addEventListener("submit", e => {
           displayPetInfo();
         })
         .catch(err => console.error("Fetch error:", err));
-    };
-
-    if (photoData) {
-      fetch(photoData)
-        .then(res => res.blob())
-        .then(blob => {
-          formData.append("photo", blob, file.name);
-          sendForm();
-        });
-    } else {
-      sendForm();
     }
   };
 
   if (file) resizeImage(file, 300, 300, finalizeLog);
   else finalizeLog(null);
 });
+
 
 
 // Handle surgery date changes

@@ -14,5 +14,7 @@ urlpatterns = [
     path('ajax-pet-logs/<int:pet_id>/', views.pet_logs_json, name='pet_logs_json'),
     path("ai-helper/", views.ai_helper, name="ai_helper"),
     path("ajax-delete-log/<int:log_id>/", views.ajax_delete_log, name="ajax_delete_log"),
+    path('ajax-update-log/<int:log_id>/', views.ajax_update_log, name='ajax_update_log'),
+
 
 ]
