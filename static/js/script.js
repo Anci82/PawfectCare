@@ -567,8 +567,11 @@ logForm.addEventListener("submit", e => {
 
     function sendLogRequest() {
       const isEdit = editIndex !== null;
-      const url = isEdit ? `/ajax-update-log/${logs[editIndex].id}/` : "/ajax-create-log/";
-      const method = isEdit ? "PUT" : "POST";
+      const url = isEdit
+        ? `/ajax-update-log/${logs[editIndex].id}/`
+        : "/ajax-create-log/";
+      const method = "POST"; // ✅ always POST, even for edit
+
 
       fetch(url, { method, body: formData })
         .then(res => res.json())
