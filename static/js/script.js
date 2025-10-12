@@ -253,8 +253,8 @@ function displayPetInfo() {
 
   // toggle collapse/expand
   petHeader.addEventListener('click', () => {
-    const isActive = petContent.style.display === 'block';
-    petContent.style.display = isActive ? 'none' : 'block';
+    const isActive = petContent.style.display === '';
+    petContent.style.display = isActive ? 'none' : '';
     arrow.style.transform = isActive ? 'rotate(0deg)' : 'rotate(90deg)';
   });
 
