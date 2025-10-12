@@ -155,6 +155,7 @@ header.header-wrapper {
     transition: all 0.3s ease, transform 0.3s ease;
     z-index: 1000;
     font-size: 0.9rem; /* slightly smaller text */
+    height: 120px;
 }
 .header-left {
     display: flex;
@@ -262,7 +263,7 @@ header .header-right button:hover {
 }
 .tip-widget{
   display: inline-block;
-  max-width: 250px;
+  max-width: 500px;
   font-style: italic;
   color: #131212;
   text-align: center;
@@ -280,7 +281,7 @@ header .header-right button:hover {
 .main-wrapper {
     position: relative;
     min-height: 100%;
-    margin-top: 80px; /* space for fixed header */
+    margin-top: 120px; /* space for fixed header */
 }
 
 .main-wrapper::before {

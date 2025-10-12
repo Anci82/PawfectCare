@@ -155,4 +155,4 @@ async function fetchTip() {
 fetchTip();
 
 // Rotate every 3 minutes
-setInterval(fetchTip, 30000); // 180000ms = 3 minutes
+setInterval(fetchTip, 60000); // 180000ms = 3 minutes
