@@ -427,7 +427,7 @@ function displayLogs() {
   const logList = document.getElementById("logList");
   logList.innerHTML = "";
 
-  // 🐾 Wrap the whole logs section
+  // Wrap the whole logs section
   const wrapper = document.createElement('div');
   wrapper.className = 'logs-wrapper';
   wrapper.innerHTML = `
@@ -439,7 +439,7 @@ function displayLogs() {
   `;
   const content = wrapper.querySelector('.log-section-content');
 
-  // All logs start collapsed
+  // Section collapsed initially
   content.style.display = 'none';
   const sectionArrow = wrapper.querySelector('.arrow');
   sectionArrow.style.transform = 'rotate(0deg)';
@@ -461,7 +461,7 @@ function displayLogs() {
     div.innerHTML = `
       <div class="log-header">
         <span>${log.date}${dayLabel ? ` — ${dayLabel}` : ""}</span>
-        <span>▶</span>
+        <span class="arrow">▶</span>
       </div>
       <div class="log-content">
         <strong>Food:</strong> ${log.food}<br>
@@ -476,55 +476,52 @@ function displayLogs() {
 
     const logHeader = div.querySelector(".log-header");
     const logContent = div.querySelector(".log-content");
-    const logArrow = logHeader.querySelector("span:last-child");
+    const logArrow = logHeader.querySelector(".arrow");
 
-    // start collapsed
+    // Start collapsed
     logContent.style.display = 'none';
     logArrow.style.transform = 'rotate(0deg)';
 
-    // toggle function for individual logs
-    function toggleLog(e) {
+    // Toggle a log when header OR arrow clicked
+    logHeader.addEventListener("click", (e) => {
       if (e.target.closest('button')) return; // ignore buttons
 
       // collapse all other logs
       content.querySelectorAll(".log-entry").forEach(entry => {
         if (entry !== div) {
           entry.querySelector(".log-content").style.display = "none";
-          entry.querySelector(".log-header span:last-child").style.transform = "rotate(0deg)";
+          entry.querySelector(".arrow").style.transform = "rotate(0deg)";
         }
       });
 
-      // toggle THIS log
-      const isActive = logContent.style.display === "block";
-      logContent.style.display = isActive ? "none" : "block";
-      logArrow.style.transform = isActive ? "rotate(0deg)" : "rotate(90deg)";
-    }
-
-    logHeader.addEventListener("click", toggleLog);
-    logContent.addEventListener("click", toggleLog);
+      const isOpen = logContent.style.display === 'block';
+      logContent.style.display = isOpen ? 'none' : 'block';
+      logArrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+    });
 
     content.appendChild(div);
   });
 
   // Section toggle
   const sectionHeader = wrapper.querySelector('.log-section-header');
-  sectionHeader.addEventListener('click', () => {
+  sectionHeader.addEventListener('click', (e) => {
+    // prevent double toggle if clicking inside a log entry
+    if (e.target.closest('.log-entry')) return;
+
     const isVisible = content.style.display === 'block';
     content.style.display = isVisible ? 'none' : 'block';
     sectionArrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(90deg)';
 
-    // collapse all individual logs when minimizing section
-    if (!isVisible) {
+    if (!isVisible) { // expand section → collapse all logs first
       content.querySelectorAll('.log-entry').forEach(entry => {
         entry.querySelector('.log-content').style.display = 'none';
-        entry.querySelector('.log-header span:last-child').style.transform = 'rotate(0deg)';
+        entry.querySelector('.arrow').style.transform = 'rotate(0deg)';
       });
     }
   });
 
   logList.appendChild(wrapper);
 
-  // setup edit/delete buttons
   setupEditDelete();
 }
 
