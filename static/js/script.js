@@ -447,7 +447,7 @@ function displayLogs() {
       const logD = new Date(log.date);
       const diffDays = Math.floor((logD - surgery) / (1000 * 60 * 60 * 24));
       if (diffDays < 0) {
-        dayLabel = `Day ${Math.abs(diffDays)} (pre-surgery)`; // fixed negative
+        dayLabel = `Day ${Math.abs(diffDays)} (pre-surgery)`;
       } else {
         dayLabel = `Day ${diffDays}`;
       }
@@ -483,13 +483,16 @@ function displayLogs() {
     logContent.style.display = 'none';
     logArrow.style.transform = 'rotate(0deg)';
 
-    // toggle individual log (only one open at a time)
-    logHeader.addEventListener("click", () => {
-      content.querySelectorAll(".log-entry").forEach(e => {
-        if (e !== div) {
-          e.classList.remove("active");
-          e.querySelector(".log-content").style.display = "none";
-          e.querySelector(".log-header span:last-child").style.transform = "rotate(0deg)";
+    // ✅ toggle individual log (only one open at a time)
+    logHeader.addEventListener("click", (e) => {
+      // ignore clicks on buttons (Edit/Delete)
+      if (e.target.closest('button')) return;
+
+      content.querySelectorAll(".log-entry").forEach(entry => {
+        if (entry !== div) {
+          entry.classList.remove("active");
+          entry.querySelector(".log-content").style.display = "none";
+          entry.querySelector(".log-header span:last-child").style.transform = "rotate(0deg)";
         }
       });
 
@@ -528,6 +531,7 @@ function displayLogs() {
   // setup edit/delete buttons
   setupEditDelete();
 }
+
 
 
 // Setup Edit/Delete buttons
