@@ -424,11 +424,13 @@ document.getElementById("add-med").addEventListener("click", () => {
 
 // Display logs
 function displayLogs() {
-  const logList = document.getElementById("logList");
-  logList.innerHTML = "";
+  const logList = document.getElementById('logList');
+  logList.innerHTML = '';
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "logs-wrapper";
+  // 🐾 Wrap the whole logs section
+  const wrapper = document.createElement('div');
+  wrapper.className = 'logs-wrapper';
+
   wrapper.innerHTML = `
     <div class="log-section-header">
       <span><strong>Daily Logs</strong></span>
@@ -436,43 +438,25 @@ function displayLogs() {
     </div>
     <div class="log-section-content"></div>
   `;
-  const content = wrapper.querySelector(".log-section-content");
-  content.style.display = "none"; // start collapsed
-  const sectionArrow = wrapper.querySelector(".arrow");
-  sectionArrow.style.transform = "rotate(0deg)";
 
-  // Section toggle
-  wrapper.querySelector(".log-section-header").addEventListener("click", () => {
-    const visible = content.style.display === "block";
-    content.style.display = visible ? "none" : "block";
-    sectionArrow.style.transform = visible ? "rotate(0deg)" : "rotate(90deg)";
+  const content = wrapper.querySelector('.log-section-content');
+  const sectionArrow = wrapper.querySelector('.arrow');
 
-    // collapse all logs when section is minimized
-    if (!visible) {
-      content.querySelectorAll(".log-entry .log-content").forEach(c => {
-        c.style.display = "none";
-        c.parentElement.querySelector(".log-header span:last-child").style.transform = "rotate(0deg)";
-      });
-    }
-  });
+  // Section starts collapsed
+  content.style.display = 'none';
+  sectionArrow.style.transform = 'rotate(0deg)';
 
+  // Build individual log entries
   logs.forEach((log, idx) => {
-    let dayLabel = "";
-    if (petInfo.surgery_date) {
-      const surgery = new Date(petInfo.surgery_date);
-      const logD = new Date(log.date);
-      const diffDays = Math.floor((logD - surgery) / (1000*60*60*24));
-      dayLabel = diffDays < 0 ? `Day ${Math.abs(diffDays)} (pre-surgery)` : `Day ${diffDays}`;
-    }
+    const medStr = log.meds
+      .map(m => `${m.name || "—"} (${m.dosage || 0}mg x ${m.times || 0})`)
+      .join(', ');
 
-    const medStr = log.meds.map(m => `${m.name || "—"} (${m.dosage || 0}mg x ${m.times || 0})`).join(", ");
-    const photoSrc = log.photo ? (log.photo.startsWith("http") ? log.photo : `/media/pet_photos/${log.photo}`) : "";
-
-    const div = document.createElement("div");
-    div.className = "log-entry";
+    const div = document.createElement('div');
+    div.className = 'log-entry';
     div.innerHTML = `
       <div class="log-header">
-        <span>${log.date}${dayLabel ? ` — ${dayLabel}` : ""}</span>
+        <span>${log.date}</span>
         <span>▶</span>
       </div>
       <div class="log-content">
@@ -480,40 +464,72 @@ function displayLogs() {
         <strong>Medicine:</strong> ${medStr}<br>
         <strong>Energy:</strong> ${log.energy}<br>
         <strong>Notes:</strong> ${log.notes || "—"}<br>
-        ${photoSrc ? `<img src="${photoSrc}" class="log-photo"><br>` : ""}
+        ${log.photo ? `<img src="${log.photo}" alt="Pet Photo" class="log-photo">` : ''}<br>
         <button type="button" class="primary-btn edit-log-btn" data-index="${idx}">Edit</button>
         <button type="button" class="primary-btn delete-log-btn" data-index="${idx}">Delete</button>
       </div>
     `;
 
-    const logHeader = div.querySelector(".log-header");
-    const logContent = div.querySelector(".log-content");
-    const logArrow = logHeader.querySelector("span:last-child");
-    logContent.style.display = "none";
-    logArrow.style.transform = "rotate(0deg)";
+    const logHeader = div.querySelector('.log-header');
 
-    // Toggle log on click anywhere except buttons
-    div.addEventListener("click", e => {
-      if (e.target.closest("button")) return; // ignore buttons
-      const open = logContent.style.display === "block";
-
-      // close all other logs
-      content.querySelectorAll(".log-entry .log-content").forEach(c => {
-        c.style.display = "none";
-        c.parentElement.querySelector(".log-header span:last-child").style.transform = "rotate(0deg)";
-      });
-
-      // open this one
-      logContent.style.display = open ? "none" : "block";
-      logArrow.style.transform = open ? "rotate(0deg)" : "rotate(90deg)";
+    // Toggle log details with class
+    logHeader.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return; // ignore clicks on buttons
+      div.classList.toggle('active');
     });
 
     content.appendChild(div);
   });
 
+  // Section toggle
+  const sectionHeader = wrapper.querySelector('.log-section-header');
+  sectionHeader.addEventListener('click', () => {
+    const isVisible = content.style.display === 'block';
+    content.style.display = isVisible ? 'none' : 'block';
+    sectionArrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(90deg)';
+
+    // Collapse all individual logs when minimizing section
+    if (!isVisible) {
+      content.querySelectorAll('.log-entry').forEach(entry => {
+        entry.classList.remove('active');
+      });
+    }
+  });
+
   logList.appendChild(wrapper);
-  setupEditDelete();
+
+  // Reattach edit/delete buttons
+  wrapper.querySelectorAll('.edit-log-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // prevent toggling when editing
+      const idx = btn.dataset.index;
+      const log = logs[idx];
+      editIndex = idx;
+      addLogBtn.innerText = 'Done';
+      showForm(dailyLogWrapper);
+
+      document.getElementById('date').value = log.date;
+      document.getElementById('food').value = log.food;
+      document.getElementById('energy').value = log.energy;
+      document.getElementById('notes').value = log.notes || '';
+      photoInput.value = '';
+
+      const medsWrapper = document.getElementById('medications-wrapper');
+      medsWrapper.innerHTML = '';
+      log.meds.forEach(med => {
+        const row = document.createElement('div');
+        row.className = 'med-row flex-row';
+        row.innerHTML = `
+          <input type="text" class="medName" placeholder="Medicine Name" value="${med.name || ''}">
+          <input type="number" class="medDosage" placeholder="Dosage (mg)" value="${med.dosage || ''}">
+          <input type="number" class="medTimes" placeholder="Times per Day" value="${med.times || ''}">
+        `;
+        medsWrapper.appendChild(row);
+      });
+    });
+  });
 }
+
 
 
 
