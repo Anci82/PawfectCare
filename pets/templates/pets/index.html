@@ -28,6 +28,9 @@
         />
         <h1>PawfectCare</h1>
       </div>
+      <div id="tip-of-the-day" class="tip-widget">
+        Loading tip...
+      </div>
       <div class="header-right" id="headerRight">
         <div class="login-group">
           <input type="text" id="loginUsername" placeholder="Username" />
@@ -73,7 +76,7 @@
             </section>
             <section class="container" id="vetInfoDisplay">
               <h2>📌 Vet Info </h2>
-              <div id="petInfoContent">No pet info saved yet.</div>
+              <div id="vetInfoContent">No vet info saved yet.</div>
             </section>
             
 
@@ -84,7 +87,7 @@
             </section>
             <section class="container" id="galleryDisplay">
               <h2>📌 Gallery </h2>
-              <div id="petInfoContent">No pet info saved yet.</div>
+              <div id="galleryContent">No pet info saved yet.</div>
             </section>
           </div>
 
@@ -385,5 +388,6 @@
     </footer>
 
     <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/tip-of-the-day.js' %}"></script>
   </body>
 </html>

@@ -260,7 +260,20 @@ header .header-right button:hover {
     border-radius: 0;
     padding: 0;
 }
-
+.tip-widget{
+  display: inline-block;
+  max-width: 250px;
+  font-style: italic;
+  color: #131212;
+  text-align: center;
+  padding: 5px 0;
+  transition: opacity 0.5s ease;
+  opacity: 1;
+  font-size: 1rem;
+}
+.tip.hidden {
+  opacity: 0;
+}
 /* ============================
    MAIN WRAPPER & BACKGROUND
 ============================ */
