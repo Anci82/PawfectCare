@@ -439,6 +439,11 @@ function displayLogs() {
   `;
   const content = wrapper.querySelector('.log-section-content');
 
+  // All logs start collapsed
+  content.style.display = 'none';
+  const sectionArrow = wrapper.querySelector('.arrow');
+  sectionArrow.style.transform = 'rotate(0deg)';
+
   // Build individual log entries
   logs.forEach((log, idx) => {
     let dayLabel = "";
@@ -446,16 +451,10 @@ function displayLogs() {
       const surgery = new Date(petInfo.surgery_date);
       const logD = new Date(log.date);
       const diffDays = Math.floor((logD - surgery) / (1000 * 60 * 60 * 24));
-      if (diffDays < 0) {
-        dayLabel = `Day ${Math.abs(diffDays)} (pre-surgery)`;
-      } else {
-        dayLabel = `Day ${diffDays}`;
-      }
+      dayLabel = diffDays < 0 ? `Day ${Math.abs(diffDays)} (pre-surgery)` : `Day ${diffDays}`;
     }
 
-    const medStr = log.meds
-      .map(m => `${m.name || "—"} (${m.dosage || 0}mg x ${m.times || 0})`)
-      .join(", ");
+    const medStr = log.meds.map(m => `${m.name || "—"} (${m.dosage || 0}mg x ${m.times || 0})`).join(", ");
 
     const div = document.createElement("div");
     div.className = "log-entry";
@@ -483,38 +482,36 @@ function displayLogs() {
     logContent.style.display = 'none';
     logArrow.style.transform = 'rotate(0deg)';
 
-    // ✅ toggle individual log (only one open at a time)
-    logHeader.addEventListener("click", (e) => {
-      // ignore clicks on buttons (Edit/Delete)
-      if (e.target.closest('button')) return;
+    // toggle function for individual logs
+    function toggleLog(e) {
+      if (e.target.closest('button')) return; // ignore buttons
 
+      // collapse all other logs
       content.querySelectorAll(".log-entry").forEach(entry => {
         if (entry !== div) {
-          entry.classList.remove("active");
           entry.querySelector(".log-content").style.display = "none";
           entry.querySelector(".log-header span:last-child").style.transform = "rotate(0deg)";
         }
       });
 
+      // toggle THIS log
       const isActive = logContent.style.display === "block";
       logContent.style.display = isActive ? "none" : "block";
       logArrow.style.transform = isActive ? "rotate(0deg)" : "rotate(90deg)";
-    });
+    }
+
+    logHeader.addEventListener("click", toggleLog);
+    logContent.addEventListener("click", toggleLog);
 
     content.appendChild(div);
   });
 
-  // === Add minimize/expand for the WHOLE log section ===
+  // Section toggle
   const sectionHeader = wrapper.querySelector('.log-section-header');
-  const arrow = sectionHeader.querySelector('.arrow');
-
-  content.style.display = 'none';
-  arrow.style.transform = 'rotate(0deg)';
-
   sectionHeader.addEventListener('click', () => {
     const isVisible = content.style.display === 'block';
     content.style.display = isVisible ? 'none' : 'block';
-    arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(90deg)';
+    sectionArrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(90deg)';
 
     // collapse all individual logs when minimizing section
     if (!isVisible) {
@@ -525,7 +522,6 @@ function displayLogs() {
     }
   });
 
-  // append wrapper to logList container
   logList.appendChild(wrapper);
 
   // setup edit/delete buttons
