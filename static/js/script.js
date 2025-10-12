@@ -338,33 +338,7 @@ function loadDogBreeds() {
 }
 loadDogBreeds();
 // ============================
-// DASHBOARD FORM LOGIC
-// ============================
-const showLogFormBtn = document.getElementById("showLogFormBtn");
-const showAIFormBtn = document.getElementById("showAIFormBtn");
-const exitLogBtn = document.getElementById("exitLogBtn");
-const exitAIBtn = document.getElementById("exitAIBtn");
-const backPetBtn = document.getElementById('exitPetInfoBtn');
 
-dailyLogWrapper.style.display = "none";
-aiSection.style.display = "none";
-
-function showForm(formElement) {
-  rightBoxes.style.display = "none";
-  dailyLogWrapper.style.display = "none";
-  aiSection.style.display = "none";
-  petInfoWrapper.style.display = "none";
-  petInfoDisplay.style.display = "none";
-  vetInfoDisplay.style.display = "none";
-  galleryDisplay.style.display = "none";
-  const logHistoryDisplay = document.getElementById("logHistoryDisplay");
-  if (logHistoryDisplay) logHistoryDisplay.style.display = "none";
-  formElement.style.display = "block";
-  window.scrollTo({ top: formElement.offsetTop, behavior: "smooth" });
-}
-
-showLogFormBtn.addEventListener("click", () => showForm(dailyLogWrapper));
-showAIFormBtn.addEventListener("click", () => showForm(aiSection));
 /* ============================
    DAILY LOGS
 ============================ */
@@ -840,118 +814,6 @@ aiForm.addEventListener("submit", async (e) => {
   aiQuestion.value = ""; // reset textarea
 });
 
-// ============================
-// SIMPLE AI TEST
-// ============================
-// const aiForm = document.getElementById("aiForm");
-// const aiAnswer = document.getElementById("aiAnswer");
-
-// aiForm.addEventListener("submit", async (e) => {
-//   e.preventDefault();
-//   aiAnswer.innerText = "Thinking... 🤖";
-
-//   try {
-//     const res = await fetch("/ai-helper/", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         "X-CSRFToken": getCookie("csrftoken"), // if CSRF is on
-//       },
-//       // Right now Django ignores this body, but keep structure for later
-//       body: JSON.stringify({ prompt: "ignore me, Django is hardcoding" }),
-//     });
-
-//     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-//     const data = await res.json();
-//     console.log("AI response data:", data);
-
-//     aiAnswer.innerText = data.generated_text || "No AI answer 🐶";
-//   } catch (err) {
-//     console.error("AI error:", err);
-//     aiAnswer.innerText = "Error: " + err.message;
-//   }
-// });
-
-
-
-
-// const aiForm = document.getElementById("aiForm");
-// const aiQuestion = document.getElementById("aiQuestion");
-// const aiAnswer = document.getElementById("aiAnswer");
-// const aiOption = document.getElementById("aiOption");
-
-// aiOption.addEventListener("change", function () {
-//   aiQuestion.disabled = this.value !== "question";
-// });
-
-// aiForm.addEventListener("submit", async (e) => {
-//   e.preventDefault();
-//   aiAnswer.innerText = "Thinking... 🤖";
-
-//   // Log everything before sending
-//   console.log("=== LOGS BEFORE SENDING ===");
-//   console.log(logs);
-
-//   const formData = new FormData();
-//   formData.append("logs", JSON.stringify(logs)); // send logs array
-//   formData.append("question", aiQuestion.value || "");
-
-//   // CSRF token from page
-//   const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
-//   if (csrfTokenEl) {
-//     formData.append("csrfmiddlewaretoken", csrfTokenEl.value);
-//   }
-
-//   try {
-//     const res = await fetch("/ai-helper/", {
-//       method: "POST",
-//       body: formData,
-//     });
-
-//     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-//     const data = await res.json();
-//     aiAnswer.innerText = data[0]?.generated_text || "No AI answer 🐶";
-//   } catch (err) {
-//     console.error(err);
-//     aiAnswer.innerText = "Error: " + err.message;
-//   }
-// });
-
-// aiForm.addEventListener("submit", function (e) {
-//   e.preventDefault();
-//   const option = aiOption.value;
-//   const recentLogs = logs
-//     .slice(-7)
-//     .map((log) => {
-//       const meds = log.meds
-//         .map((m) => `${m.name || "—"} (${m.dosage || 0}mg x ${m.times || 0})`)
-//         .join(", ");
-//       return `${log.date}: Food ${log.food}, Meds ${meds}, Energy ${
-//         log.energy
-//       }, Notes: ${log.notes || "—"}, Photo ${log.photo ? "uploaded" : "none"}`;
-//     })
-//     .join("\n");
-
-//   let prompt = `Pet: ${petInfo.type || "Unknown"} (${
-//     petInfo.age || "?"
-//   } years, ${petInfo.breed || "Unknown breed"})\nSurgery: ${
-//     petInfo.surgery_type || "Unknown"
-//   }\nReason: ${
-//     petInfo.surgery_reason || "—"
-//   }\n\nRecovery logs (last 7 days):\n${recentLogs}\n`;
-
-//   if (option === "question") {
-//     const question = aiQuestion.value.trim();
-//     if (!question) return;
-//     prompt += `Owner question: "${question}"`;
-//   } else {
-//     prompt += "Please provide a recovery analysis based on the logs.";
-//   }
-
-//   aiAnswer.innerText = "Preparing AI response...\n\n" + prompt;
-//   aiQuestion.value = "";
-// });
 
 // ============================
 // RESET ALL DATA
@@ -971,7 +833,33 @@ function resetAllData() {
     showNotification("All data cleared!");
   }
 }
+// DASHBOARD FORM LOGIC
+// ============================
+const showLogFormBtn = document.getElementById("showLogFormBtn");
+const showAIFormBtn = document.getElementById("showAIFormBtn");
+const exitLogBtn = document.getElementById("exitLogBtn");
+const exitAIBtn = document.getElementById("exitAIBtn");
+const backPetBtn = document.getElementById('exitPetInfoBtn');
 
+dailyLogWrapper.style.display = "none";
+aiSection.style.display = "none";
+
+function showForm(formElement) {
+  rightBoxes.style.display = "none";
+  dailyLogWrapper.style.display = "none";
+  aiSection.style.display = "none";
+  petInfoWrapper.style.display = "none";
+  petInfoDisplay.style.display = "none";
+  vetInfoDisplay.style.display = "none";
+  galleryDisplay.style.display = "none";
+  const logHistoryDisplay = document.getElementById("logHistoryDisplay");
+  if (logHistoryDisplay) logHistoryDisplay.style.display = "none";
+  formElement.style.display = "block";
+  window.scrollTo({ top: formElement.offsetTop, behavior: "smooth" });
+}
+
+showLogFormBtn.addEventListener("click", () => showForm(dailyLogWrapper));
+showAIFormBtn.addEventListener("click", () => showForm(aiSection));
 
 
 exitLogBtn.addEventListener("click", () => {
