@@ -1,3 +1,4 @@
+
 /* ============================
    LOGIN / HEADER
 ============================ */
@@ -187,6 +188,8 @@ const petInfoContent = document.getElementById("petInfoContent");
 const petInfoWrapper = document.getElementById("petInfoWrapper");
 const petInfoDisplay = document.getElementById("petInfoDisplay");
 const rightBoxes = document.getElementById("rightBoxes");
+const vetInfoDisplay = document.getElementById("vetInfoDisplay");
+const galleryDisplay = document.getElementById("galleryDisplay");
 
 let petInfo = {};
 
@@ -210,6 +213,8 @@ function displayPetInfo() {
   if (!petInfo.type) {
     petInfoWrapper.style.display = "block";
     petInfoDisplay.style.display = "none";
+    vetInfoDisplay.style.display = "none";
+    galleryDisplay.style.display = "none";
     rightBoxes.style.display = "none";
     document.getElementById("logHistoryDisplay").style.display = "none";
     backPetBtn.style.display = "none";
@@ -240,6 +245,8 @@ function displayPetInfo() {
   // Initial display setup
   petInfoWrapper.style.display = "none";
   petInfoDisplay.style.display = "block";
+  vetInfoDisplay.style.display = "block";
+  galleryDisplay.style.display = "block";
   rightBoxes.style.display = "flex";
   document.getElementById("logHistoryDisplay").style.display = "block";
 
@@ -270,6 +277,8 @@ function displayPetInfo() {
     document.getElementById('surgeryDate').value = petInfo.surgery_date || '';
     document.getElementById('surgeryReason').value = petInfo.surgery_reason || '';
     petInfoDisplay.style.display = 'none';
+    vetInfoDisplay.style.display = 'none';
+    galleryDisplay.style.display = 'none';
     rightBoxes.style.display = 'none';
     document.getElementById('logHistoryDisplay').style.display = 'none';
   });
@@ -328,6 +337,34 @@ function loadDogBreeds() {
     .catch((err) => console.error("Error loading dog breeds:", err));
 }
 loadDogBreeds();
+// ============================
+// DASHBOARD FORM LOGIC
+// ============================
+const showLogFormBtn = document.getElementById("showLogFormBtn");
+const showAIFormBtn = document.getElementById("showAIFormBtn");
+const exitLogBtn = document.getElementById("exitLogBtn");
+const exitAIBtn = document.getElementById("exitAIBtn");
+const backPetBtn = document.getElementById('exitPetInfoBtn');
+
+dailyLogWrapper.style.display = "none";
+aiSection.style.display = "none";
+
+function showForm(formElement) {
+  rightBoxes.style.display = "none";
+  dailyLogWrapper.style.display = "none";
+  aiSection.style.display = "none";
+  petInfoWrapper.style.display = "none";
+  petInfoDisplay.style.display = "none";
+  vetInfoDisplay.style.display = "none";
+  galleryDisplay.style.display = "none";
+  const logHistoryDisplay = document.getElementById("logHistoryDisplay");
+  if (logHistoryDisplay) logHistoryDisplay.style.display = "none";
+  formElement.style.display = "block";
+  window.scrollTo({ top: formElement.offsetTop, behavior: "smooth" });
+}
+
+showLogFormBtn.addEventListener("click", () => showForm(dailyLogWrapper));
+showAIFormBtn.addEventListener("click", () => showForm(aiSection));
 /* ============================
    DAILY LOGS
 ============================ */
@@ -935,32 +972,7 @@ function resetAllData() {
   }
 }
 
-// ============================
-// DASHBOARD FORM LOGIC
-// ============================
-const showLogFormBtn = document.getElementById("showLogFormBtn");
-const showAIFormBtn = document.getElementById("showAIFormBtn");
-const exitLogBtn = document.getElementById("exitLogBtn");
-const exitAIBtn = document.getElementById("exitAIBtn");
-const backPetBtn = document.getElementById('exitPetInfoBtn');
 
-dailyLogWrapper.style.display = "none";
-aiSection.style.display = "none";
-
-function showForm(formElement) {
-  rightBoxes.style.display = "none";
-  dailyLogWrapper.style.display = "none";
-  aiSection.style.display = "none";
-  petInfoWrapper.style.display = "none";
-  petInfoDisplay.style.display = "none";
-  const logHistoryDisplay = document.getElementById("logHistoryDisplay");
-  if (logHistoryDisplay) logHistoryDisplay.style.display = "none";
-  formElement.style.display = "block";
-  window.scrollTo({ top: formElement.offsetTop, behavior: "smooth" });
-}
-
-showLogFormBtn.addEventListener("click", () => showForm(dailyLogWrapper));
-showAIFormBtn.addEventListener("click", () => showForm(aiSection));
 
 exitLogBtn.addEventListener("click", () => {
   dailyLogWrapper.style.display = "none";
