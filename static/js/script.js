@@ -212,49 +212,74 @@ function displayPetInfo() {
     petInfoDisplay.style.display = "none";
     rightBoxes.style.display = "none";
     document.getElementById("logHistoryDisplay").style.display = "none";
-    backPetBtn.style.display = 'none';
+    backPetBtn.style.display = "none";
     return;
   }
+
   backPetBtn.style.display = 'inline-block';
   document.getElementById("petId").value = petInfo.id || "";
-  petInfoContent.innerHTML = `
-      <strong>Type:</strong> ${petInfo.type}<br>
-        <strong>Name:</strong> ${petInfo.name || "—"}<br>
-        <strong>Age:</strong> ${petInfo.age}<br>
-    <strong>Weight:</strong> ${petInfo.weight != null ? petInfo.weight : "—"}<br>
-    <strong>Breed:</strong> ${petInfo.breed || "—"}<br>
-    <strong>Surgery:</strong> ${petInfo.surgery_type || "—"}<br>
-    <strong>Surgery Date:</strong> ${petInfo.surgery_date || "—"}<br>
-    <strong>Reason / Notes:</strong> ${petInfo.surgery_reason || "—"}<br>
-    <button type="button" id="editPetInfo" class="primary-btn">Edit</button>
-    `;
 
+  // Build collapsible content
+  petInfoContent.innerHTML = `
+    <div class="pet-header">
+      <span><strong>${petInfo.name ? petInfo.name.charAt(0).toUpperCase() + petInfo.name.slice(1).toLowerCase() : "Unnamed Pet"}</strong></span>
+      <span class="arrow">▶</span>
+    </div>
+    <div class="pet-content">
+      <strong>Type:</strong> ${petInfo.type}<br>
+      <strong>Age:</strong> ${petInfo.age}<br>
+      <strong>Weight:</strong> ${petInfo.weight != null ? petInfo.weight : "—"}<br>
+      <strong>Breed:</strong> ${petInfo.breed || "—"}<br>
+      <strong>Surgery:</strong> ${petInfo.surgery_type || "—"}<br>
+      <strong>Surgery Date:</strong> ${petInfo.surgery_date || "—"}<br>
+      <strong>Reason / Notes:</strong> ${petInfo.surgery_reason || "—"}<br>
+      <button type="button" id="editPetInfo" class="primary-btn">Edit</button>
+    </div>
+  `;
+
+  // Initial display setup
   petInfoWrapper.style.display = "none";
   petInfoDisplay.style.display = "block";
   rightBoxes.style.display = "flex";
   document.getElementById("logHistoryDisplay").style.display = "block";
 
-  document.getElementById("editPetInfo").addEventListener("click", () => {
-    petInfoWrapper.style.display = "block";
-    petType.value = petInfo.type;
-    document.getElementById("petName").value = petInfo.name || "";
-    document.getElementById("petAge").value = petInfo.age;
-    document.getElementById("weight").value =
-      petInfo.weight != null ? petInfo.weight : "";
-    breedSelect.value = petInfo.breed;
-    document.getElementById("surgeryType").value = petInfo.surgery_type || "";
-    document.getElementById("surgeryDate").value = petInfo.surgery_date || "";
-    document.getElementById("surgeryReason").value =
-      petInfo.surgery_reason || "";
-    petInfoDisplay.style.display = "none";
-    rightBoxes.style.display = "none";
-    document.getElementById("logHistoryDisplay").style.display = "none";
+  const petHeader = petInfoContent.querySelector('.pet-header');
+  const petContent = petInfoContent.querySelector('.pet-content');
+  const arrow = petInfoContent.querySelector('.arrow');
+
+  // start minimized
+  petContent.style.display = 'none';
+  arrow.style.transform = 'rotate(0deg)';
+
+  // toggle collapse/expand
+  petHeader.addEventListener('click', () => {
+    const isActive = petContent.style.display === 'block';
+    petContent.style.display = isActive ? 'none' : 'block';
+    arrow.style.transform = isActive ? 'rotate(0deg)' : 'rotate(90deg)';
   });
+
+  // Edit button behavior
+  document.getElementById('editPetInfo').addEventListener('click', () => {
+    petInfoWrapper.style.display = 'block';
+    petType.value = petInfo.type;
+    document.getElementById('petName').value = petInfo.name || '';
+    document.getElementById('petAge').value = petInfo.age;
+    document.getElementById('weight').value = petInfo.weight != null ? petInfo.weight : '';
+    breedSelect.value = petInfo.breed;
+    document.getElementById('surgeryType').value = petInfo.surgery_type || '';
+    document.getElementById('surgeryDate').value = petInfo.surgery_date || '';
+    document.getElementById('surgeryReason').value = petInfo.surgery_reason || '';
+    petInfoDisplay.style.display = 'none';
+    rightBoxes.style.display = 'none';
+    document.getElementById('logHistoryDisplay').style.display = 'none';
+  });
+
+  // fetch logs if pet exists
   if (petInfo.id) {
-  fetchPetLogs(petInfo.id);
+    fetchPetLogs(petInfo.id);
+  }
 }
 
-}
 
 petInfoForm.addEventListener("submit", function (e) {
   e.preventDefault();
@@ -391,6 +416,19 @@ function displayLogs() {
   const logList = document.getElementById("logList");
   logList.innerHTML = "";
 
+  // 🐾 Wrap the whole logs section
+  const wrapper = document.createElement('div');
+  wrapper.className = 'logs-wrapper';
+  wrapper.innerHTML = `
+    <div class="log-section-header">
+      <span><strong>Daily Logs</strong></span>
+      <span class="arrow">▶</span>
+    </div>
+    <div class="log-section-content"></div>
+  `;
+  const content = wrapper.querySelector('.log-section-content');
+
+  // Build individual log entries
   logs.forEach((log, idx) => {
     let dayLabel = "";
     if (petInfo.surgery_date) {
@@ -398,20 +436,21 @@ function displayLogs() {
       const logD = new Date(log.date);
       const diffDays = Math.floor((logD - surgery) / (1000 * 60 * 60 * 24));
       if (diffDays < 0) {
-      dayLabel = `Day ${diffDays} (pre-surgery)`;
-    } else {
-      dayLabel = `Day ${diffDays}`;
-    }
-  
+        dayLabel = `Day ${Math.abs(diffDays)} (pre-surgery)`; // fixed negative
+      } else {
+        dayLabel = `Day ${diffDays}`;
+      }
     }
 
-    const medStr = log.meds.map(m => `${m.name || "—"} (${m.dosage || 0}mg x ${m.times || 0})`).join(", ");
+    const medStr = log.meds
+      .map(m => `${m.name || "—"} (${m.dosage || 0}mg x ${m.times || 0})`)
+      .join(", ");
 
     const div = document.createElement("div");
     div.className = "log-entry";
     div.innerHTML = `
       <div class="log-header">
-        <span>${log.date} ${dayLabel ? `— ${dayLabel}` : ""}</span>
+        <span>${log.date}${dayLabel ? ` — ${dayLabel}` : ""}</span>
         <span>▶</span>
       </div>
       <div class="log-content">
@@ -424,12 +463,61 @@ function displayLogs() {
         <button type="button" class="primary-btn delete-log-btn" data-index="${idx}">Delete</button>
       </div>
     `;
-    div.querySelector(".log-header").addEventListener("click", () => div.classList.toggle("active"));
-    logList.appendChild(div);
+
+    const logHeader = div.querySelector(".log-header");
+    const logContent = div.querySelector(".log-content");
+    const logArrow = logHeader.querySelector("span:last-child");
+
+    // start collapsed
+    logContent.style.display = 'none';
+    logArrow.style.transform = 'rotate(0deg)';
+
+    // toggle individual log (only one open at a time)
+    logHeader.addEventListener("click", () => {
+      content.querySelectorAll(".log-entry").forEach(e => {
+        if (e !== div) {
+          e.classList.remove("active");
+          e.querySelector(".log-content").style.display = "none";
+          e.querySelector(".log-header span:last-child").style.transform = "rotate(0deg)";
+        }
+      });
+
+      const isActive = logContent.style.display === "block";
+      logContent.style.display = isActive ? "none" : "block";
+      logArrow.style.transform = isActive ? "rotate(0deg)" : "rotate(90deg)";
+    });
+
+    content.appendChild(div);
   });
 
+  // === Add minimize/expand for the WHOLE log section ===
+  const sectionHeader = wrapper.querySelector('.log-section-header');
+  const arrow = sectionHeader.querySelector('.arrow');
+
+  content.style.display = 'none';
+  arrow.style.transform = 'rotate(0deg)';
+
+  sectionHeader.addEventListener('click', () => {
+    const isVisible = content.style.display === 'block';
+    content.style.display = isVisible ? 'none' : 'block';
+    arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(90deg)';
+
+    // collapse all individual logs when minimizing section
+    if (!isVisible) {
+      content.querySelectorAll('.log-entry').forEach(entry => {
+        entry.querySelector('.log-content').style.display = 'none';
+        entry.querySelector('.log-header span:last-child').style.transform = 'rotate(0deg)';
+      });
+    }
+  });
+
+  // append wrapper to logList container
+  logList.appendChild(wrapper);
+
+  // setup edit/delete buttons
   setupEditDelete();
 }
+
 
 // Setup Edit/Delete buttons
 function setupEditDelete() {
