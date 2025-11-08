@@ -498,6 +498,8 @@ function displayLogs() {
 
   logList.appendChild(wrapper);
 
+  setupEditDelete();
+
   // Reattach edit/delete buttons
   wrapper.querySelectorAll('.edit-log-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -680,6 +682,7 @@ logForm.addEventListener("submit", e => {
         .then(res => res.json())
         .then(data => {
           if (!data.success) return showNotification("Error: " + JSON.stringify(data.errors));
+          const newId = data.id ?? data.log_id;
 
           const newLog = {
             id: isEdit ? logs[editIndex].id : data.id,
