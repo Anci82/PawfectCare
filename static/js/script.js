@@ -423,6 +423,7 @@ document.getElementById("add-med").addEventListener("click", () => {
 });
 
 // Display logs
+let logsExpanded = false;
 function displayLogs() {
   const logList = document.getElementById('logList');
   logList.innerHTML = '';
@@ -442,9 +443,15 @@ function displayLogs() {
   const content = wrapper.querySelector('.log-section-content');
   const sectionArrow = wrapper.querySelector('.arrow');
 
-  // Section starts collapsed
+  // Restore expand/collapse state
+if (logsExpanded) {
+  content.style.display = 'block';
+  sectionArrow.style.transform = 'rotate(90deg)';
+} else {
   content.style.display = 'none';
   sectionArrow.style.transform = 'rotate(0deg)';
+}
+
 
   // Build individual log entries
   logs.forEach((log, idx) => {
@@ -484,17 +491,20 @@ function displayLogs() {
   // Section toggle
   const sectionHeader = wrapper.querySelector('.log-section-header');
   sectionHeader.addEventListener('click', () => {
-    const isVisible = content.style.display === 'block';
-    content.style.display = isVisible ? 'none' : 'block';
-    sectionArrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(90deg)';
+  const isVisible = content.style.display === 'block';
 
-    // Collapse all individual logs when minimizing section
-    if (!isVisible) {
-      content.querySelectorAll('.log-entry').forEach(entry => {
-        entry.classList.remove('active');
-      });
-    }
-  });
+  logsExpanded = !isVisible; // ✅ store state
+
+  content.style.display = logsExpanded ? 'block' : 'none';
+  sectionArrow.style.transform = logsExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+
+  if (!logsExpanded) {
+    content.querySelectorAll('.log-entry').forEach(entry => {
+      entry.classList.remove('active');
+    });
+  }
+});
+
 
   logList.appendChild(wrapper);
 
