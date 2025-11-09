@@ -757,10 +757,10 @@ header .header-right button:hover {
     padding: 0.5rem 1rem;
     border-radius: 10px;
     box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    line-height: 1.6; 
     font-size: 1.5rem;
     font-weight: bold;
     cursor: pointer;
+    color: #1b3e7d;
     letter-spacing: 2px;
     margin-bottom: 1rem;
     font-size: 1.2rem;   
@@ -778,10 +778,16 @@ header .header-right button:hover {
     box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
 .btn-row{
+    margin: 1rem;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
 }
-
+.form-group label{
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: rgb(114, 110, 110);
+    letter-spacing: 2px;
+}
 /* ============================
    LOG ENTRIES DISPLAY
 ============================ */
@@ -943,6 +949,9 @@ header .header-right button:hover {
 input[type="text"],
 input[type="number"],
 input[type="date"],
+input[type="datetime-local"],
+input[type="email"],
+input[type="tel"],
 select,
 textarea {
     width: 100%;
