@@ -766,6 +766,7 @@ header .header-right button:hover {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
     color: #1b3e7d;
+
     border-bottom: 2px solid #95B7C7;
     padding-bottom: 0.3rem;
 }
@@ -785,7 +786,7 @@ header .header-right button:hover {
 
 .log-header, .pet-header, .log-section-header {
     font-weight: bold;
-    color: #1b3e7d;
+    /* color: #1b3e7d; */
     display: flex;
     justify-content: space-between;
     align-items: center;
