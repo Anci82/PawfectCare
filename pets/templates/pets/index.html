@@ -69,16 +69,52 @@
         <div class="dashboard-flex">
           <!-- LEFT PANEL -->
           <div class="left-panel">
+
             <!-- PET INFO SUMMARY -->
             <section class="container" id="petInfoDisplay">
               <h2>🐾 Pet Info 🐾</h2>
               <div id="petInfoContent">No pet info saved yet.</div>
             </section>
+
+            <!-- VET INFO SUMMARY -->
             <section class="container" id="vetInfoDisplay">
-              <h2>🩺 Vet Info </h2>
-              <div id="vetInfoContent">No vet info saved yet.</div>
-            </section>
+              <h2>🩺 Vet & Appointments</h2>
             
+              <div id="vetInfoSummary" class="vet-summary">
+                <span class="vet-summary-title">Next Appointment:<br></span>
+                <span id="vetSummaryDate" class="vet-summary-value">DATE/TIME</span>
+                <span class="vet-summary-arrow">▶</span>
+              </div>
+            
+              <form id="vetInfoForm" method="post">
+                {% csrf_token %}
+            
+                <div class="form-group">
+                  <label for="next_appointment">Next appointment: </label>
+                  <input type="datetime-local" id="next_appointment" name="next_appointment">
+                </div>
+            
+                <div class="form-group">
+                  <label for="clinic_name">Clinic's name:</label>
+                  <input type="text" id="clinic_name" name="clinic_name" placeholder="e.g. Happy Paws Clinic">
+                </div>
+            
+                <div class="form-group">
+                  <label for="phone">Phone number:</label>
+                  <input type="tel" id="phone" name="phone" pattern="^\+\d{7,15}$" placeholder="+447123456789">
+                </div>
+            
+                <div class="form-group">
+                  <label for="email">Email:<br></label>
+                  <input type="email" id="email" name="email" placeholder="clinic@example.com">
+                </div>
+            
+                <div class="btn-row">
+                  <button type="submit" class="primary-btn">Save</button>
+                  <button type="button" id="vetInfoEditBtn" class="primary-btn">Edit</button>
+                </div>
+              </form>
+            </section>
 
             <!-- DAILY LOG HISTORY -->
             <section class="container" id="logHistoryDisplay">

@@ -1,8 +1,12 @@
 from django.db import models
 from django.conf import settings
 
-from django.db import models
-from django.conf import settings
+from .validators import validate_international_phone_no_spaces
+from django.core.validators import EmailValidator
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+
+
 
 class Pet(models.Model):
     PET_TYPES = [
@@ -62,3 +66,25 @@ class Medication(models.Model):
 
     def __str__(self):
         return f"{self.name} for {self.log.pet.name} on {self.log.date}"
+
+class VetInfo(models.Model):
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='vet_info'
+    )
+    clinic_name = models.CharField(max_length=80, blank=True)
+    phone = models.CharField(max_length=20, validators=[validate_international_phone_no_spaces], blank=True)
+    email = models.EmailField(blank=True, validators=[EmailValidator()])
+    next_appointment = models.DateTimeField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        # Only enforce if a date is provided
+        if self.next_appointment and self.next_appointment <= timezone.now():
+            raise ValidationError({"next_appointment": "Appointment must be in the future."})
+
+    def __str__(self):
+        return f"{self.owner.username} — {self.clinic_name or 'No clinic set'}"

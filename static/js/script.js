@@ -319,6 +319,7 @@ petInfoForm.addEventListener("submit", function (e) {
 
 // Call fetch when dashboard loads
 if (document.getElementById("dashboard")) fetchPetInfo();
+
 /* ============================
    LOAD DOG BREEDS
 ============================ */
@@ -337,6 +338,45 @@ function loadDogBreeds() {
     .catch((err) => console.error("Error loading dog breeds:", err));
 }
 loadDogBreeds();
+
+/* ============================
+   VET AND APPOINTMENTS
+============================ */
+
+document.addEventListener("DOMContentLoaded", () => {
+  const vetInfoSummary = document.getElementById("vetInfoSummary");
+  const vetInfoForm = document.getElementById("vetInfoForm");
+  const vetSummaryArrow = document.querySelector(".vet-summary-arrow");
+  const vetInfoEditBtn = document.getElementById("vetInfoEditBtn");
+
+  // Start minimized
+  vetInfoForm.style.display = "none";
+
+  // Toggle open/close on summary click
+  vetInfoSummary.addEventListener("click", () => {
+    const isOpen = vetInfoForm.style.display === "block";
+
+    if (isOpen) {
+      vetInfoForm.style.display = "none";
+      vetSummaryArrow.textContent = "▶";
+    } else {
+      vetInfoForm.style.display = "block";
+      vetSummaryArrow.textContent = "▼";
+    }
+  });
+
+  // Edit button just focuses first input (or activates edit mode later)
+  vetInfoEditBtn.addEventListener("click", () => {
+    vetInfoForm.style.display = "block";
+    vetSummaryArrow.textContent = "▼";
+    document.getElementById("clinic_name").focus();
+  });
+});
+
+
+
+
+
 // ============================
 
 /* ============================

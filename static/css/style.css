@@ -733,6 +733,8 @@ header .header-right button:hover {
     grid-column: 1;   
     color: rgb(87, 84, 84);
     font-weight: 600;
+    letter-spacing: 2px;
+    
 }
 
 
@@ -747,6 +749,37 @@ header .header-right button:hover {
 .pet-content {
     font-weight: bold;
     font-size: 1rem;
+}
+
+/* VET SECTION */
+
+#vetInfoSummary{
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    line-height: 1.6; 
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;   
+    background: linear-gradient(135deg, #f5f5f5, rgb(238, 223, 196));
+}
+
+#vetInfoForm{
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+    background: linear-gradient(135deg, #f5f5f5, rgb(238, 223, 196));
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+.btn-row{
+    display: flex;
+    justify-content: space-between;
 }
 
 /* ============================
@@ -772,6 +805,7 @@ header .header-right button:hover {
     border-radius: 10px;
     box-shadow: 0 3px 8px rgba(0,0,0,0.1);
     border-bottom: 2px solid #95B7C7;
+    cursor: pointer;
 }
 
 
@@ -780,7 +814,11 @@ header .header-right button:hover {
    font-family: 'Alex Brush', cursive;
    letter-spacing: 10px;
    text-align: center!important;
-   color: rgb(0, 5, 14)!important; ;
+   color: rgb(0, 5, 14)!important; 
+  
+}
+.pet-header{
+    cursor: pointer;
 }
 
 .log-entry:hover{
