@@ -453,10 +453,23 @@ document.addEventListener("DOMContentLoaded", () => {
     cardEl.id = "vetInfoReadOnly";
     cardEl.className = "vet-readonly";
     cardEl.innerHTML = `
-      <div><strong>Clinic:</strong> ${data.clinic_name || "—"}</div>
-      <div><strong>Phone:</strong> ${data.phone || "—"}</div>
-      <div><strong>Email:</strong> ${data.email || "—"}</div>
-      <div style="margin-top:.5rem">
+      <div><strong>Clinic:<br></strong> ${data.clinic_name || "—"}</div>
+      <div><strong>Phone:</strong><br>
+      ${
+      data.phone
+        ? `<a href="tel:${data.phone}" class="vet-link">📞 ${data.phone}</a>`
+        : "—"
+      }
+      </div>
+
+      <div><strong>Email:</strong><br>
+      ${
+        data.email
+        ? `<a href="mailto:${data.email}" class="vet-link">📧 ${data.email}</a>`
+        : "—"
+      }
+      </div>
+      <div>
         <button type="button" id="vetInfoEditBtn" class="primary-btn">Edit</button>
       </div>
     `;
