@@ -113,6 +113,7 @@ function handleLogin() {
         renderPostLoginHeader(data.username);
         fetchPetInfo();
         displayLogs();
+        displayVetInfo();
       } else {
         showNotification("Login failed: " + data.error);
       }
@@ -146,6 +147,7 @@ function handleLogout() {
         petInfo = {};
         logs = [];
         localStorage.removeItem("petLogs");
+        resetVetUI();
         renderPreLoginHeader();
       }
     });
@@ -340,101 +342,222 @@ function loadDogBreeds() {
 loadDogBreeds();
 
 /* ============================
-   VET AND APPOINTMENTS
+   VET & APPOINTMENTS
 ============================ */
 
-// / Format a nice summary date like "12 Jan 2026, 14:30"
-function fmtDateForSummary(isoOrLocal) {
-  if (!isoOrLocal) return "—";
-  const d = new Date(isoOrLocal);
-  if (isNaN(d)) return "—";
-  return d.toLocaleString(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-// Convert <input type="datetime-local"> value to ISO for backend
-function localToISO(datetimeLocal) {
-  if (!datetimeLocal) return null; // "2025-11-09T17:45"
-  const d = new Date(datetimeLocal);
-  return isNaN(d) ? null : d.toISOString();
-}
-
-// Convert ISO from backend into a value usable by datetime-local input
-function isoToLocalInputValue(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d)) return "";
-  const pad = (n) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-}
+/* ============================
+   VET & APPOINTMENTS (complete)
+============================ */
 
 document.addEventListener("DOMContentLoaded", () => {
-  const vetInfoSummary  = document.getElementById("vetInfoSummary");
-  const vetInfoForm     = document.getElementById("vetInfoForm");
-  const vetSummaryArrow = document.querySelector(".vet-summary-arrow");
-  const summaryDateEl   = document.getElementById("vetSummaryDate");
+  // ----- elements -----
+  const container     = document.getElementById("vetInfoDisplay");
+  const summaryRow    = document.getElementById("vetInfoSummary");
+  const summaryDateEl = document.getElementById("vetSummaryDate");
+  const arrowEl       = document.querySelector(".vet-summary-arrow");
+  const form          = document.getElementById("vetInfoForm");
 
   const inputDate   = document.getElementById("next_appointment");
   const inputClinic = document.getElementById("clinic_name");
   const inputPhone  = document.getElementById("phone");
   const inputEmail  = document.getElementById("email");
 
-  // --- start minimized
-  vetInfoForm.style.display = "none";
+  // ----- state -----
+  let cardEl = null;          // read-only card node
+  let isOpen = false;         // expanded/collapsed
+  let currentVet = null;      // last fetched/saved vet info (per session, not localStorage)
 
-  // --- toggle open/close on summary click
-  vetInfoSummary.addEventListener("click", () => {
-    const isOpen = vetInfoForm.style.display === "block";
-    vetInfoForm.style.display = isOpen ? "none" : "block";
-    vetSummaryArrow.textContent = isOpen ? "▶" : "▼";
-  });
+  // Start collapsed
+  form.style.display = "none";
 
-  // --- load existing data (if any)
-  (async function loadVetInfo() {
-    try {
-      const res = await fetch("/vet-info/", {
-        method: "GET",
-        headers: { "Accept": "application/json" },
-        credentials: "same-origin",
-      });
-
-      if (!res.ok) {
-        // 404 would mean no existing record yet (depending on your view)
-        console.warn("Load vet info status:", res.status);
-        summaryDateEl.textContent = "—";
-        return;
+  // ---------- helpers ----------
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      for (const c of document.cookie.split(";")) {
+        const cookie = c.trim();
+        if (cookie.startsWith(name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
       }
+    }
+    return cookieValue;
+  }
 
-      const data = await res.json();
-      // Fill fields
-      inputClinic.value = data.clinic_name || "";
-      inputPhone.value  = data.phone || "";
-      inputEmail.value  = data.email || "";
-      inputDate.value   = isoToLocalInputValue(data.next_appointment);
+  function fmtDateForSummary(isoOrLocal) {
+    if (!isoOrLocal) return "—";
+    const d = new Date(isoOrLocal);
+    if (isNaN(d)) return "—";
+    return d.toLocaleString(undefined, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
 
-      // Update summary line
-      summaryDateEl.textContent = fmtDateForSummary(data.next_appointment);
+  function localToISO(datetimeLocal) {
+    if (!datetimeLocal) return null;       // "2025-11-09T17:45"
+    const d = new Date(datetimeLocal);
+    return isNaN(d) ? null : d.toISOString();
+  }
+
+  const pad = (n) => String(n).padStart(2, "0");
+
+  function isoToDatetimeLocalValue(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function hasAnyField(data) {
+    if (!data) return false;
+    return Boolean(
+      (data.clinic_name && data.clinic_name.trim()) ||
+      (data.phone && data.phone.trim()) ||
+      (data.email && data.email.trim()) ||
+      data.next_appointment
+    );
+  }
+
+  // ---------- UI helpers ----------
+  function fillForm(data) {
+    inputClinic.value = data?.clinic_name || "";
+    inputPhone.value  = data?.phone || "";
+    inputEmail.value  = data?.email || "";
+    inputDate.value   = isoToDatetimeLocalValue(data?.next_appointment);
+  }
+
+  function setSummary(nextISO) {
+    summaryDateEl.textContent = fmtDateForSummary(nextISO);
+  }
+
+  function hideCard() {
+    if (cardEl) cardEl.style.display = "none";
+  }
+
+  function removeCard() {
+    if (cardEl) { cardEl.remove(); cardEl = null; }
+  }
+
+  function showCard() {
+    if (cardEl) cardEl.style.display = "block";
+  }
+
+  function renderCard(data) {
+    removeCard();
+    cardEl = document.createElement("div");
+    cardEl.id = "vetInfoReadOnly";
+    cardEl.className = "vet-readonly";
+    cardEl.innerHTML = `
+      <div><strong>Clinic:</strong> ${data.clinic_name || "—"}</div>
+      <div><strong>Phone:</strong> ${data.phone || "—"}</div>
+      <div><strong>Email:</strong> ${data.email || "—"}</div>
+      <div style="margin-top:.5rem">
+        <button type="button" id="vetInfoEditBtn" class="primary-btn">Edit</button>
+      </div>
+    `;
+    container.insertBefore(cardEl, form);
+
+    // Edit → show form prefilled
+    cardEl.querySelector("#vetInfoEditBtn").addEventListener("click", () => {
+      if (currentVet) fillForm(currentVet);
+      cardEl.style.display = "none";
+      form.style.display = "block";
+      arrowEl.textContent = "▼";
+      inputClinic.focus();
+    });
+  }
+
+  function resetVetUI() {
+    // called on logout
+    currentVet = null;
+    summaryDateEl.textContent = "DATE/TIME";
+    arrowEl.textContent = "▶";
+    form.reset();
+    form.style.display = "none";
+    removeCard();
+    isOpen = false;
+  }
+
+  // ---------- data ops ----------
+  async function fetchVetInfo() {
+    const res = await fetch("/vet-info/", {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      // 404 or other → treat as no data
+      return null;
+    }
+    return await res.json();
+  }
+
+  async function saveVetInfo(payload) {
+    const res = await fetch("/vet-info/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken"),
+        "Accept": "application/json",
+      },
+      credentials: "same-origin",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Save failed ${res.status}: ${txt}`);
+    }
+    return await res.json();
+  }
+
+  // ---------- expanded content loader ----------
+  async function loadExpanded() {
+    try {
+      const data = await fetchVetInfo();
+      currentVet = data; // keep in memory only (per session)
+      if (hasAnyField(data)) {
+        // show card, hide form
+        renderCard(data);
+        showCard();
+        form.style.display = "none";
+        setSummary(data.next_appointment);
+      } else {
+        // no data → show empty form
+        removeCard();
+        fillForm({}); // clear
+        form.style.display = "block";
+        setSummary(null);
+      }
     } catch (err) {
       console.error("Error loading vet info:", err);
-      summaryDateEl.textContent = "—";
+      // fallback to showing form
+      removeCard();
+      form.style.display = "block";
     }
-  })();
+  }
 
-  // --- save (create/update)
-  vetInfoForm.addEventListener("submit", async (e) => {
+  // ---------- toggle behavior ----------
+  summaryRow.addEventListener("click", async () => {
+    isOpen = !isOpen;
+    arrowEl.textContent = isOpen ? "▼" : "▶";
+    if (isOpen) {
+      await loadExpanded();
+    } else {
+      hideCard();
+      form.style.display = "none";
+    }
+  });
+
+  // ---------- save handler ----------
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // HTML 'required' already helps, but we double-check
     const clinic = inputClinic.value.trim();
     if (!clinic) {
       inputClinic.focus();
@@ -443,48 +566,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const payload = {
       clinic_name: clinic,
-      phone: inputPhone.value.trim() || "",
-      email: inputEmail.value.trim() || "",
+      phone: (inputPhone.value || "").trim(),
+      email: (inputEmail.value || "").trim(),
       next_appointment: inputDate.value ? localToISO(inputDate.value) : null,
     };
 
     try {
-      const res = await fetch("/vet-info/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),   // IMPORTANT: use cookie token
-          "Accept": "application/json",
-        },
-        body: JSON.stringify(payload),
-        credentials: "same-origin",
-      });
+      const saved = await saveVetInfo(payload);
+      currentVet = saved;
+      setSummary(saved.next_appointment);
 
-      if (!res.ok) {
-        const txt = await res.text();
-        console.error("Save failed:", res.status, txt);
-        alert("Could not save vet info. Please check your inputs.");
-        return;
-      }
-
-      const saved = await res.json();
-
-      // Update summary date
-      summaryDateEl.textContent = fmtDateForSummary(saved.next_appointment);
-
-      // Collapse the form (optional vibe)
-      vetInfoForm.style.display = "none";
-      vetSummaryArrow.textContent = "▶";
-
-      console.log("Vet info saved:", saved);
+      // swap to card in expanded view
+      renderCard(saved);
+      showCard();
+      form.style.display = "none";
+      arrowEl.textContent = "▼";
+      console.log("Vet info saved.");
     } catch (err) {
-      console.error("Network error:", err);
-      alert("Network error. Try again.");
+      console.error(err);
+      alert("Could not save vet info. Please check your inputs.");
     }
   });
+
+  // ---------- tiny hooks for login/logout ----------
+  // Call after successful LOGIN to refresh the collapsed summary.
+  async function displayVetInfo() {
+    try {
+      const data = await fetchVetInfo();
+      currentVet = data;
+      setSummary(data?.next_appointment || null);
+    } catch {
+      setSummary(null);
+    }
+  }
+
+  // Expose to other modules (login/logout handlers)
+  window.displayVetInfo = displayVetInfo; // use after login
+  window.resetVetUI = resetVetUI;         // use on logout
 });
 
-// ============================
 
 /* ============================
    DAILY LOGS

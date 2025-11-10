@@ -15,11 +15,11 @@ from django.views.decorators.http import require_POST
 import os
 from decouple import config
 from django.views.decorators.http import require_http_methods
-from django.forms.models import model_to_dict
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import make_aware
 from django.http import HttpResponseBadRequest
-
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 
 
@@ -223,15 +223,9 @@ def pet_logs_json(request, pet_id):
 # --------------------------
 # VET AND APPOINTMENT MANAGEMENT
 # --------------------------
-def _serialize_vet(vet):
-    return {
-        "clinic_name": vet.clinic_name or "",
-        "phone": vet.phone or "",
-        "email": vet.email or "",
-        "next_appointment": vet.next_appointment.isoformat() if vet.next_appointment else None,
-    }
-
 @login_required
+@ensure_csrf_cookie     # ensure csrftoken cookie is set on GET
+@never_cache            # prevent cross-user caching
 @require_http_methods(["GET", "POST"])
 def vet_info_view(request):
     vet, _ = VetInfo.objects.get_or_create(owner=request.user)
@@ -239,14 +233,11 @@ def vet_info_view(request):
     if request.method == "GET":
         return JsonResponse(_serialize_vet(vet))
 
-    # POST: accept JSON OR form-encoded
-    if request.content_type and "application/json" in request.content_type:
-        try:
-            data = json.loads(request.body.decode("utf-8"))
-        except Exception:
-            return HttpResponseBadRequest("Invalid JSON")
-    else:
-        data = request.POST
+    # POST
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return HttpResponseBadRequest("Invalid JSON")
 
     clinic_name = (data.get("clinic_name") or "").strip()
     phone       = (data.get("phone") or "").strip()
@@ -260,22 +251,26 @@ def vet_info_view(request):
     vet.phone = phone
     vet.email = email
 
-    # next_appointment is optional
     if next_raw:
-      # next_raw can be ISO (from JSON) or form string like "2025-11-09T17:45"
-      dt = parse_datetime(next_raw)
-      if dt and dt.tzinfo is None:
-          dt = make_aware(dt)
-      vet.next_appointment = dt
+        dt = parse_datetime(next_raw)
+        if dt and dt.tzinfo is None:
+            dt = make_aware(dt)
+        vet.next_appointment = dt
     else:
-      vet.next_appointment = None
+        vet.next_appointment = None
 
     vet.save()
-    return JsonResponse(_serialize_vet(vet))
+    resp = JsonResponse(_serialize_vet(vet))
+    resp["Cache-Control"] = "no-store"   # extra paranoid
+    return resp
 
-
-
-
+def _serialize_vet(vet):
+    return {
+        "clinic_name": vet.clinic_name,
+        "phone": vet.phone,
+        "email": vet.email,
+        "next_appointment": vet.next_appointment.isoformat() if vet.next_appointment else None,
+    }
 # --------------------------
 # LOGS
 # --------------------------
