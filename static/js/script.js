@@ -343,39 +343,146 @@ loadDogBreeds();
    VET AND APPOINTMENTS
 ============================ */
 
-document.addEventListener("DOMContentLoaded", () => {
-  const vetInfoSummary = document.getElementById("vetInfoSummary");
-  const vetInfoForm = document.getElementById("vetInfoForm");
-  const vetSummaryArrow = document.querySelector(".vet-summary-arrow");
-  const vetInfoEditBtn = document.getElementById("vetInfoEditBtn");
+// / Format a nice summary date like "12 Jan 2026, 14:30"
+function fmtDateForSummary(isoOrLocal) {
+  if (!isoOrLocal) return "—";
+  const d = new Date(isoOrLocal);
+  if (isNaN(d)) return "—";
+  return d.toLocaleString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-  // Start minimized
+// Convert <input type="datetime-local"> value to ISO for backend
+function localToISO(datetimeLocal) {
+  if (!datetimeLocal) return null; // "2025-11-09T17:45"
+  const d = new Date(datetimeLocal);
+  return isNaN(d) ? null : d.toISOString();
+}
+
+// Convert ISO from backend into a value usable by datetime-local input
+function isoToLocalInputValue(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const vetInfoSummary  = document.getElementById("vetInfoSummary");
+  const vetInfoForm     = document.getElementById("vetInfoForm");
+  const vetSummaryArrow = document.querySelector(".vet-summary-arrow");
+  const summaryDateEl   = document.getElementById("vetSummaryDate");
+
+  const inputDate   = document.getElementById("next_appointment");
+  const inputClinic = document.getElementById("clinic_name");
+  const inputPhone  = document.getElementById("phone");
+  const inputEmail  = document.getElementById("email");
+
+  // --- start minimized
   vetInfoForm.style.display = "none";
 
-  // Toggle open/close on summary click
+  // --- toggle open/close on summary click
   vetInfoSummary.addEventListener("click", () => {
     const isOpen = vetInfoForm.style.display === "block";
+    vetInfoForm.style.display = isOpen ? "none" : "block";
+    vetSummaryArrow.textContent = isOpen ? "▶" : "▼";
+  });
 
-    if (isOpen) {
+  // --- load existing data (if any)
+  (async function loadVetInfo() {
+    try {
+      const res = await fetch("/vet-info/", {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        credentials: "same-origin",
+      });
+
+      if (!res.ok) {
+        // 404 would mean no existing record yet (depending on your view)
+        console.warn("Load vet info status:", res.status);
+        summaryDateEl.textContent = "—";
+        return;
+      }
+
+      const data = await res.json();
+      // Fill fields
+      inputClinic.value = data.clinic_name || "";
+      inputPhone.value  = data.phone || "";
+      inputEmail.value  = data.email || "";
+      inputDate.value   = isoToLocalInputValue(data.next_appointment);
+
+      // Update summary line
+      summaryDateEl.textContent = fmtDateForSummary(data.next_appointment);
+    } catch (err) {
+      console.error("Error loading vet info:", err);
+      summaryDateEl.textContent = "—";
+    }
+  })();
+
+  // --- save (create/update)
+  vetInfoForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // HTML 'required' already helps, but we double-check
+    const clinic = inputClinic.value.trim();
+    if (!clinic) {
+      inputClinic.focus();
+      return;
+    }
+
+    const payload = {
+      clinic_name: clinic,
+      phone: inputPhone.value.trim() || "",
+      email: inputEmail.value.trim() || "",
+      next_appointment: inputDate.value ? localToISO(inputDate.value) : null,
+    };
+
+    try {
+      const res = await fetch("/vet-info/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),   // IMPORTANT: use cookie token
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(payload),
+        credentials: "same-origin",
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error("Save failed:", res.status, txt);
+        alert("Could not save vet info. Please check your inputs.");
+        return;
+      }
+
+      const saved = await res.json();
+
+      // Update summary date
+      summaryDateEl.textContent = fmtDateForSummary(saved.next_appointment);
+
+      // Collapse the form (optional vibe)
       vetInfoForm.style.display = "none";
       vetSummaryArrow.textContent = "▶";
-    } else {
-      vetInfoForm.style.display = "block";
-      vetSummaryArrow.textContent = "▼";
+
+      console.log("Vet info saved:", saved);
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Network error. Try again.");
     }
   });
-
-  // Edit button just focuses first input (or activates edit mode later)
-  vetInfoEditBtn.addEventListener("click", () => {
-    vetInfoForm.style.display = "block";
-    vetSummaryArrow.textContent = "▼";
-    document.getElementById("clinic_name").focus();
-  });
 });
-
-
-
-
 
 // ============================
 

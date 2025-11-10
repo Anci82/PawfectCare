@@ -73,7 +73,7 @@ class VetInfo(models.Model):
         on_delete=models.CASCADE,
         related_name='vet_info'
     )
-    clinic_name = models.CharField(max_length=80, blank=True)
+    clinic_name = models.CharField(max_length=80, blank=False)
     phone = models.CharField(max_length=20, validators=[validate_international_phone_no_spaces], blank=True)
     email = models.EmailField(blank=True, validators=[EmailValidator()])
     next_appointment = models.DateTimeField(blank=True, null=True)

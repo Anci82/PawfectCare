@@ -6,7 +6,7 @@ from django.utils.dateparse import parse_date
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from .forms import PetForm, DailyLogForm, MedicationForm
-from .models import Pet, DailyLog, Medication
+from .models import Pet, DailyLog, Medication, VetInfo
 import json
 from datetime import timedelta
 import requests
@@ -15,6 +15,12 @@ from django.views.decorators.http import require_POST
 import os
 from decouple import config
 from django.views.decorators.http import require_http_methods
+from django.forms.models import model_to_dict
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import make_aware
+from django.http import HttpResponseBadRequest
+
+
 
 
 
@@ -214,6 +220,65 @@ def pet_logs_json(request, pet_id):
 
     return JsonResponse({'success': True, 'logs': logs})
 
+# --------------------------
+# VET AND APPOINTMENT MANAGEMENT
+# --------------------------
+def _serialize_vet(vet):
+    return {
+        "clinic_name": vet.clinic_name or "",
+        "phone": vet.phone or "",
+        "email": vet.email or "",
+        "next_appointment": vet.next_appointment.isoformat() if vet.next_appointment else None,
+    }
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def vet_info_view(request):
+    vet, _ = VetInfo.objects.get_or_create(owner=request.user)
+
+    if request.method == "GET":
+        return JsonResponse(_serialize_vet(vet))
+
+    # POST: accept JSON OR form-encoded
+    if request.content_type and "application/json" in request.content_type:
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+        except Exception:
+            return HttpResponseBadRequest("Invalid JSON")
+    else:
+        data = request.POST
+
+    clinic_name = (data.get("clinic_name") or "").strip()
+    phone       = (data.get("phone") or "").strip()
+    email       = (data.get("email") or "").strip()
+    next_raw    = (data.get("next_appointment") or "").strip()
+
+    if not clinic_name:
+        return JsonResponse({"error": "Clinic name is required."}, status=400)
+
+    vet.clinic_name = clinic_name
+    vet.phone = phone
+    vet.email = email
+
+    # next_appointment is optional
+    if next_raw:
+      # next_raw can be ISO (from JSON) or form string like "2025-11-09T17:45"
+      dt = parse_datetime(next_raw)
+      if dt and dt.tzinfo is None:
+          dt = make_aware(dt)
+      vet.next_appointment = dt
+    else:
+      vet.next_appointment = None
+
+    vet.save()
+    return JsonResponse(_serialize_vet(vet))
+
+
+
+
+# --------------------------
+# LOGS
+# --------------------------
 @login_required
 @csrf_exempt  # remove in production, use proper CSRF headers
 @require_http_methods(["PUT", "POST"])  # allow PUT and fallback POST
