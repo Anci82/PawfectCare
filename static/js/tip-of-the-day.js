@@ -1,5 +1,34 @@
 const tipEl = document.getElementById("tip-of-the-day");
-let toggle = true; // true = cat, false = dog
+
+// ---- CONFIG ----
+const APPT_WINDOW_DAYS = 5;     // show appt within this many days
+const ROTATE_MS = 30000;         // your current test speed
+// -----------------
+
+let dogIndex = 0;
+let slot = 0; // 0=cat, 1=dog, 2=appt (when available)
+
+
+// lightweight style injection for flashy appt tip
+(function ensureApptFlashStyles() {
+  if (document.getElementById("appt-flash-style")) return;
+  const style = document.createElement("style");
+  style.id = "appt-flash-style";
+  style.textContent = `
+    @keyframes tipPulse { 
+      0% { transform: scale(1); box-shadow: 0 0 0px rgba(255, 187, 0, 0.0); }
+      50% { transform: scale(1.02); box-shadow: 0 0 16px rgba(230, 211, 194, 0.6); }
+      100% { transform: scale(1); box-shadow: 0 0 0px rgba(255, 187, 0, 0.0); }
+    }
+    .flashy-appt {
+      background: linear-gradient(90deg,  #f5f5f5, rgb(238, 223, 196));
+      border-radius: .5rem;
+      padding: .25rem .5rem;
+      animation: tipPulse 1.2s ease-in-out infinite;
+    }
+  `;
+  document.head.appendChild(style);
+})();
 
 const dogFacts = [
   "Dogs can learn more than 1000 words and gestures.",
@@ -118,41 +147,117 @@ const dogFacts = [
   "Dogs can be trained to alert owners of seizures or heart attacks.",
   "The Vizsla is a highly energetic and affectionate hunting dog.",
   "Dogs have been shown to understand human pointing gestures.",
-  "The Shih Tzu has been bred for companionship and royal courts."
+  "The Shih Tzu has been bred for companionship and royal courts.",
+
+  // ─── NEW SPICY FRESH BONUS DOG FACTS ───
+  "Dogs can tell when you're speaking their name vs just making noise.",
+  "Dogs do a little 'shake-off' to reset their emotional state after stress.",
+  "Huskies can run more than 100 miles in a day without overheating.",
+  "German Shepherds can understand over 200 words.",
+  "Some dogs sync their heartbeat to their owner when cuddling.",
+  "Dogs wag their tails more to the right when they're happy.",
+  "Dogs can smell your adrenaline and cortisol levels.",
+  "A tired dog is easier to train because their brain is calmer.",
+  "Dogs sometimes sneeze to show they're playing, not fighting.",
+  "Some dogs boop noses to say 'hello'.",
+  "Dogs remember routines better than commands.",
+  "A dog will stare at you when pooping because it feels vulnerable.",
+  "If a dog sleeps touching you, that means you are their safe place.",
+  "Dogs dream about their owners.",
+  "Your dog knows your footsteps *before* you're close enough to hear."
 ];
 
-let dogIndex = 0;
+// --- helpers ---
+function readNextAppointmentForHeader() {
+  const summary = document.getElementById("vetSummaryDate");
+  if (!summary) return null;
+  const text = (summary.textContent || "").trim();
+  const d = new Date(text);
+  return isNaN(d) ? null : d;
+}
 
-async function fetchTip() {
+function timeUntil(date) {
+  const now = new Date();
+  const diffMs = date - now;
+  if (diffMs <= 0) return null;
+  const diffHours = diffMs / 3600000;
+  const diffDays = diffMs / 86400000;
+  if (diffDays >= 1) return `in ${Math.round(diffDays)} day${Math.round(diffDays) === 1 ? "" : "s"}`;
+  if (diffHours >= 1) return `in ~${Math.round(diffHours)} hour${Math.round(diffHours) === 1 ? "" : "s"}`;
+  return `soon`;
+}
+
+async function getCatTip() {
   try {
-    let tip;
-    if (toggle) {
-      // Cat tip from API
-      const res = await fetch("https://catfact.ninja/fact");
-      const data = await res.json();
-      tip = "🐱 " + data.fact;
-    } else {
-      // Dog tip from local array
-      tip = "🐶 " + dogFacts[dogIndex];
-      dogIndex = (dogIndex + 1) % dogFacts.length;
-    }
-
-    // fade out/in for smooth effect
-    tipEl.style.opacity = 0;
-    setTimeout(() => {
-      tipEl.innerText = tip;
-      tipEl.style.opacity = 1;
-    }, 500);
-
-    toggle = !toggle;
-  } catch (err) {
-    console.error("Failed to fetch tip:", err);
-    tipEl.innerText = "Could not load tip 😿";
+    const res = await fetch("https://catfact.ninja/fact");
+    const data = await res.json();
+    return "🐱 " + data.fact;
+  } catch {
+    return "🐱 Cats: professional loafers and sunbeam collectors.";
   }
 }
 
-// Initial fetch
-fetchTip();
+function getDogTip() {
+  const tip = "🐶 " + dogFacts[dogIndex];
+  dogIndex = (dogIndex + 1) % dogFacts.length;
+  return tip;
+}
 
-// Rotate every 3 minutes
-setInterval(fetchTip, 60000); // 180000ms = 3 minutes
+function getApptTip(appt) {
+  const when = timeUntil(appt) || "very soon";
+  const nice = appt.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+  // Extra pizzazz ✨
+  return `🗓️ <strong>Vet appointment ${when}</strong> — <span>${nice}</span>`;
+}
+
+// --- rotator ---
+async function fetchTip() {
+  const appt = readNextAppointmentForHeader();
+  const now = new Date();
+  const hasAppt =
+    appt &&
+    appt > now &&
+    (appt - now) / (1000 * 60 * 60 * 24) <= APPT_WINDOW_DAYS;
+
+  // Build current sequence based on whether we should include appt
+  const sequence = hasAppt ? ["cat", "dog", "appt"] : ["cat", "dog"];
+  const mode = sequence[slot % sequence.length];
+  slot++; // advance for next tick
+
+  let html; // we’ll set innerHTML for appt (has formatting), innerText for tips
+  let isAppt = false;
+
+  if (mode === "cat") {
+    const tip = await getCatTip();
+    fadeSwap(() => {
+      tipEl.classList.remove("flashy-appt");
+      tipEl.innerText = tip;
+    });
+  } else if (mode === "dog") {
+    const tip = getDogTip();
+    fadeSwap(() => {
+      tipEl.classList.remove("flashy-appt");
+      tipEl.innerText = tip;
+    });
+  } else {
+    // appointment slot
+    html = getApptTip(appt);
+    isAppt = true;
+    fadeSwap(() => {
+      tipEl.innerHTML = html;
+      tipEl.classList.add("flashy-appt");
+    });
+  }
+}
+
+function fadeSwap(applyContent) {
+  tipEl.style.opacity = 0;
+  setTimeout(() => {
+    applyContent();
+    tipEl.style.opacity = 1;
+  }, 300);
+}
+
+// kick off
+fetchTip();
+setInterval(fetchTip, ROTATE_MS);
