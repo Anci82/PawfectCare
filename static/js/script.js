@@ -42,6 +42,7 @@ function renderPreLoginHeader() {
             <button id="loginBtn" class="primary-btn">Log In</button>
             <button id="registerBtn" class="secondary-btn">Register</button>
         </div>
+        <a href="#" id="forgotPasswordLink" class="link-small">Forgot password?</a>    
     `;
   document.getElementById("loginBtn").addEventListener("click", handleLogin);
   document

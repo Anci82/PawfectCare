@@ -20,6 +20,8 @@ from django.utils.timezone import make_aware
 from django.http import HttpResponseBadRequest
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 
 
@@ -67,17 +69,59 @@ def user_register(request):
         return JsonResponse({"success": False, "error": "POST required"}, status=400)
 
     email = request.POST.get('email')
-    username = request.POST.get('username') or email.split('@')[0]
+    username = request.POST.get('username')
     password = request.POST.get('password')
 
-    if User.objects.filter(email=email).exists():
-        return JsonResponse({"success": False, "error": "Email already in use"}, status=400)
+    # Required fields
+    if not email or not password:
+        return JsonResponse(
+            {"success": False, "error": "Email and password are required"},
+            status=400,
+        )
 
+    # Auto-generate username from email if empty
+    if not username:
+        username = email.split('@')[0]
+
+    # Username max length rule
+    if len(username) > 15:
+        return JsonResponse(
+            {"success": False, "error": "Username must be 15 characters or fewer."},
+            status=400,
+        )
+
+    # Username already exists
+    if User.objects.filter(username=username).exists():
+        return JsonResponse(
+            {"success": False, "error": "Username already taken"},
+            status=400,
+        )
+
+    # Email already exists
+    if User.objects.filter(email=email).exists():
+        return JsonResponse(
+            {"success": False, "error": "Email already in use"},
+            status=400,
+        )
+
+    # Password validation
+    try:
+        validate_password(password)   # Uses validators from settings.py
+    except ValidationError as e:
+        # Convert list of messages → single readable string
+        error_message = ". ".join(e.messages)
+        return JsonResponse(
+            {"success": False, "error": error_message},
+            status=400,
+        )
+
+    # Create the user
     try:
         user = User.objects.create_user(username=username, email=email, password=password)
         return JsonResponse({"success": True, "username": user.username})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
+
 
 
 # --------------------------

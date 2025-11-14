@@ -275,6 +275,13 @@ header .header-right button:hover {
 .tip.hidden {
   opacity: 0;
 }
+.link-small {
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: inline-block;
+  text-decoration: underline;
+  cursor: pointer;
+}
 /* ============================
    MAIN WRAPPER & BACKGROUND
 ============================ */
