@@ -341,7 +341,7 @@ header .header-right button:hover {
 
 .welcome-text {
     position: absolute;
-    top: 50%;
+    top: 15%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 2;
@@ -362,6 +362,30 @@ header .header-right button:hover {
 .welcome-text p {
     font-size: 1.2rem;
     line-height: 1.5;
+}
+.demo-placeholder {
+    width: 100%;
+    max-width: 800px;
+    height: 450px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px dashed rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(3px);
+    border-radius: 1rem;
+    margin-top: 2rem;
+    z-index: 3;
+    position: absolute;
+    top: 30%;
+    left: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.demo-placeholder p {
+    color: #fff;
+    font-size: 1.2rem;
+    opacity: 0.8;
+    margin: 0;
 }
 
 /* ============================

@@ -238,8 +238,8 @@ function displayPetInfo() {
       <strong>Age:</strong> ${petInfo.age}<br>
       <strong>Weight:</strong> ${petInfo.weight != null ? petInfo.weight : "—"}<br>
       <strong>Breed:</strong> ${petInfo.breed || "—"}<br>
-      <strong>Surgery:</strong> ${petInfo.surgery_type || "—"}<br>
       <strong>Surgery Date:</strong> ${petInfo.surgery_date || "—"}<br>
+      <strong>Surgery:</strong> ${petInfo.surgery_type || "—"}<br> 
       <strong>Reason / Notes:</strong> ${petInfo.surgery_reason || "—"}<br>
       <button type="button" id="editPetInfo" class="primary-btn">Edit</button>
     </div>
