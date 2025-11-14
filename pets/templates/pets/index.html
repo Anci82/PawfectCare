@@ -1,185 +1,239 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Pawfect Care - Pet Recovery Log</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
-  </head>
-  <body>
-    <div id="notification" class="notification hide"></div>
-    <!-- Custom Confirm Modal -->
-    <div id="customConfirm" class="custom-confirm">
-      <div class="confirm-content">
-        <p id="confirmMessage">Are you sure?</p>
-        <div class="confirm-buttons">
-          <button id="confirmYes" class="primary-btn">Yes</button>
-          <button id="confirmNo" class="secondary-btn">No</button>
-        </div>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Pawfect Care - Pet Recovery Log</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+
+<body>
+  <div id="notification" class="notification hide"></div>
+  <!-- Custom Confirm Modal -->
+  <div id="customConfirm" class="custom-confirm">
+    <div class="confirm-content">
+      <p id="confirmMessage">Are you sure?</p>
+      <div class="confirm-buttons">
+        <button id="confirmYes" class="primary-btn">Yes</button>
+        <button id="confirmNo" class="secondary-btn">No</button>
       </div>
     </div>
-    <!-- HEADER -->
-    <header class="header-wrapper">
-      <div class="header-left">
-        <img
-          src="{% static 'images/logo.png' %}"
-          alt="Paw Logo"
-          class="logo-icon"
-        />
-        <h1>PawfectCare</h1>
+  </div>
+  <!-- HEADER -->
+  <header class="header-wrapper">
+    <div class="header-left">
+      <img src="{% static 'images/logo.png' %}" alt="Paw Logo" class="logo-icon" />
+      <h1>PawfectCare</h1>
+    </div>
+    <div id="tip-of-the-day" class="tip-widget">
+      Loading tip...
+    </div>
+    <div class="header-right" id="headerRight">
+      <div class="login-group">
+        <input type="text" id="loginUsername" placeholder="Username" />
+        <input type="password" id="loginPassword" placeholder="Password" />
       </div>
-      <div id="tip-of-the-day" class="tip-widget">
-        Loading tip...
+      <div class="btn-group">
+        <button id="loginBtn" class="primary-btn">Log In</button>
+        <button id="registerBtn" class="secondary-btn">Register</button>
       </div>
-      <div class="header-right" id="headerRight">
-        <div class="login-group">
-          <input type="text" id="loginUsername" placeholder="Username" />
-          <input type="password" id="loginPassword" placeholder="Password" />
-        </div>
-        <div class="btn-group">
-          <button id="loginBtn" class="primary-btn">Log In</button>
-          <button id="registerBtn" class="secondary-btn">Register</button>
-        </div>
+    </div>
+  </header>
+
+  <main class="main-wrapper">
+    <!-- WELCOME SECTION (pre-login) -->
+    <section id="welcomeSection" class="container welcome-section">
+      <div class="welcome-background">
+        <img src="{% static 'images/cat-dog-vet.png' %}" alt="Vet Welcome Image" />
       </div>
-    </header>
+      <div class="welcome-text">
+        <h2>Welcome to PawfectCare!<span class="sparkle">❤️</span></h2>
+        <p>
+          Healing takes time — especially after surgery — but you don’t have to manage
+          it alone. PawfectCare is designed specifically to support your pet’s
+          post-operation recovery, helping you track meals, medications, energy levels,
+          and gentle photo updates of their healing wound, so you can clearly see how
+          each day improves.
+        </p>
 
-    <main class="main-wrapper">
-      <!-- WELCOME SECTION (pre-login) -->
-      <section id="welcomeSection" class="container welcome-section">
-        <div class="welcome-background">
-          <img
-            src="{% static 'images/cat-dog-vet.png' %}"
-            alt="Vet Welcome Image"
-          />
-        </div>
-        <div class="welcome-text">
-          <h2>Welcome to PawfectCare!</h2>
-          <p>
-            Your all-in-one pet recovery companion! Easily log your pet’s meals,
-            medications, energy levels, and daily progress. Get clear insights
-            and track recovery to ensure your furry friends stay happy and
-            healthy. PawfectCare keeps everything organized, so you can focus on
-            loving your pets.
-          </p>
-        </div>
-        <!-- ⭐ TEMPORARY PLACEHOLDER BOX -->
-        <div id="demoPlaceholder" class="demo-placeholder">
-          <p>Demo area coming soon...</p>
-        </div>
-      </section>
+        <p>
+          PawfectCare also includes a thoughtful AI helper that gives instant insights
+          based on your logs — from spotting unusual patterns to reminding you when
+          something looks different from the past few days. It’s not a replacement for
+          a vet, but a reassuring extra set of eyes that helps you stay calm, prepared,
+          and confident between appointments.
+        </p>
 
-      <!-- DASHBOARD SECTION (hidden pre-login) -->
-      <section id="dashboard" class="dashboard-section" style="display: none">
-        <div class="dashboard-flex">
-          <!-- LEFT PANEL -->
-          <div class="left-panel">
+        <p>
+          Recovery can feel overwhelming, especially when you love your pet so much —
+          I know that feeling well. That’s why I built PawfectCare: to make these tough
+          days softer, clearer, and more supported for you and your furry friend.
+        </p>
 
-            <!-- PET INFO SUMMARY -->
-            <section class="container" id="petInfoDisplay">
-              <h2>🐾 Pet Info 🐾</h2>
-              <div id="petInfoContent">No pet info saved yet.</div>
-            </section>
+        <p>
+          And your data stays yours. Photos, logs, and personal information are handled
+          with care and stored securely, never shared or sold. PawfectCare is built to
+          support you — not compromise your trust. Your pet’s journey is private, and
+          I’m committed to keeping it that way.
+        </p>
 
-            <!-- VET INFO SUMMARY -->
-            <section class="container" id="vetInfoDisplay">
-              <h2>🩺 Vet & Appointments</h2>
-            
-              <div id="vetInfoSummary" class="vet-summary">
-                <span class="vet-summary-title">Next Appointment:<br></span>
-                <span id="vetSummaryDate" class="vet-summary-value">DATE/TIME</span>
-                <span class="vet-summary-arrow">▶</span>
-              </div>
-            
-              <form id="vetInfoForm" method="post">
-                {% csrf_token %}
-            
-                <div class="form-group">
-                  <label for="next_appointment">Next appointment: </label>
-                  <input type="datetime-local" id="next_appointment" name="next_appointment">
-                </div>
-            
-                <div class="form-group">
-                  <label for="clinic_name">Clinic's name:<br></label>
-                  <input type="text" id="clinic_name" name="clinic_name" placeholder="e.g. Happy Paws Clinic" required>
-                </div>
-            
-                <div class="form-group">
-                  <label for="phone">Phone number:<br></label>
-                  <input type="tel" id="phone" name="phone" pattern="^\+\d{7,15}$" placeholder="+447123456789">
-                </div>
-            
-                <div class="form-group">
-                  <label for="email">Email:<br></label>
-                  <input type="email" id="email" name="email" placeholder="clinic@example.com">
-                </div>
-            
-                <div class="btn-row">
-                  <button type="submit" class="primary-btn">Save</button>
-                </div>
-              </form>
-            </section>
-
-            <!-- DAILY LOG HISTORY -->
-            <section class="container" id="logHistoryDisplay">
-              <h2>📝 Recovery History </h2>
-              <div id="logList"></div>
-            </section>
-            <section class="container" id="galleryDisplay">
-              <h2>📌 Gallery </h2>
-              <div id="galleryContent">No pet info saved yet.</div>
-            </section>
+      </div>
+      <!-- ⭐ TEMPORARY PLACEHOLDER BOX -->
+      <div id="demoPlaceholder" class="demo-placeholder">
+        <div class="tour-window">
+          <div class="tour-window-header">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+            <span class="tour-window-title">PawfectCare demo</span>
           </div>
 
-          <!-- RIGHT PANEL -->
-          <div class="right-panel">
-            <!-- OPTION BOXES (initial view) -->
-            <div id="rightBoxes" class="boxes-container">
-              <div class="option-box" id="newLogBox">
-                <p>Add a daily recovery log for your pet.</p>
-                <button class="primary-btn" id="showLogFormBtn">Add Log</button>
-              </div>
-
-              <div class="option-box" id="askAIBox">
-                <p>Get AI insights about your pet's recovery.</p>
-                <button class="primary-btn" id="showAIFormBtn">Ask AI</button>
-              </div>
-
-              <div class="option-box" id="about">
-                <h3>About PawfectCare</h3>
-                <p>
-                  Hi, my name is Ana. This project started from a very personal
-                  place — my dog went through surgery, and I still remember
-                  feeling anxious, worried, and unsure if I was doing everything
-                  right to help her recover. I wanted to create something that
-                  could make this whole process a little easier for other pet
-                  owners. My hope is that it helps them feel less stressed and
-                  anxious, and more confident, so they can focus on loving and
-                  caring for their pets during these difficult times.
-                </p>
-                <hr />
-                <p>
-                  Stay tuned for more updates as I learn and grow with this
-                  project! If you'd like to support this work, donations are
-                  always appreciated ❤️
-                </p>
-                <button class="primary-btn" id="donationBtn">Donate</button>
-              </div>
+          <div class="tour-slider">
+            <div class="tour-slide active">
+              <img src="{% static 'images/demo-login.png' %}" alt="Login and register screen" />
+              <p class="tour-caption">Log in or register to start tracking your pet.</p>
             </div>
 
-            <!-- PET INFO FORM -->
-            <section class="container" id="petInfoWrapper">
-              <button type="button" class="exit-btn primary-btn" id="exitPetInfoBtn">← Back</button>
-              <h2> Pet General Info </h2>
-              <div class="petinfo-flex">
-                <!-- RIGHT SIDE: IMAGE + TEXT -->
-                <div class="petinfo-side">
-                  <p>
-                    Keep your pet’s info safe here! 💕 <br>
-                    Add details once and track recovery progress with ease.
-                  </p>
-                  <img src="{% static 'images/tag7.png' %}" alt="Happy pets" />
-                </div>
-                <!-- LEFT SIDE: FORM -->
+            <div class="tour-slide">
+              <img src="{% static 'images/demo-addlog.png' %}" alt="Add daily log" />
+              <p class="tour-caption">Add a daily log with meals, meds, and energy.</p>
+            </div>
+
+            <div class="tour-slide">
+              <img src="{% static 'images/demo-logs.png' %}" alt="Logs overview" />
+              <p class="tour-caption">Review past logs and spot patterns easily.</p>
+            </div>
+
+            <div class="tour-slide">
+              <img src="{% static 'images/demo-askai.png' %}" alt="Ask AI helper" />
+              <p class="tour-caption">Ask AI for quick guidance based on your logs.</p>
+            </div>
+          </div>
+
+          <div class="tour-dots">
+            <button class="tour-dot active" data-index="0"></button>
+            <button class="tour-dot" data-index="1"></button>
+            <button class="tour-dot" data-index="2"></button>
+            <button class="tour-dot" data-index="3"></button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- DASHBOARD SECTION (hidden pre-login) -->
+    <section id="dashboard" class="dashboard-section" style="display: none">
+      <div class="dashboard-flex">
+        <!-- LEFT PANEL -->
+        <div class="left-panel">
+
+          <!-- PET INFO SUMMARY -->
+          <section class="container" id="petInfoDisplay">
+            <h2>🐾 Pet Info 🐾</h2>
+            <div id="petInfoContent">No pet info saved yet.</div>
+          </section>
+
+          <!-- VET INFO SUMMARY -->
+          <section class="container" id="vetInfoDisplay">
+            <h2>🩺 Vet & Appointments</h2>
+
+            <div id="vetInfoSummary" class="vet-summary">
+              <span class="vet-summary-title">Next Appointment:<br></span>
+              <span id="vetSummaryDate" class="vet-summary-value">DATE/TIME</span>
+              <span class="vet-summary-arrow">▶</span>
+            </div>
+
+            <form id="vetInfoForm" method="post">
+              {% csrf_token %}
+
+              <div class="form-group">
+                <label for="next_appointment">Next appointment: </label>
+                <input type="datetime-local" id="next_appointment" name="next_appointment">
+              </div>
+
+              <div class="form-group">
+                <label for="clinic_name">Clinic's name:<br></label>
+                <input type="text" id="clinic_name" name="clinic_name" placeholder="e.g. Happy Paws Clinic" required>
+              </div>
+
+              <div class="form-group">
+                <label for="phone">Phone number:<br></label>
+                <input type="tel" id="phone" name="phone" pattern="^\+\d{7,15}$" placeholder="+447123456789">
+              </div>
+
+              <div class="form-group">
+                <label for="email">Email:<br></label>
+                <input type="email" id="email" name="email" placeholder="clinic@example.com">
+              </div>
+
+              <div class="btn-row">
+                <button type="submit" class="primary-btn">Save</button>
+              </div>
+            </form>
+          </section>
+
+          <!-- DAILY LOG HISTORY -->
+          <section class="container" id="logHistoryDisplay">
+            <h2>📝 Recovery History </h2>
+            <div id="logList"></div>
+          </section>
+          <section class="container" id="galleryDisplay">
+            <h2>📌 Gallery </h2>
+            <div id="galleryContent">No pet info saved yet.</div>
+          </section>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="right-panel">
+          <!-- OPTION BOXES (initial view) -->
+          <div id="rightBoxes" class="boxes-container">
+            <div class="option-box" id="newLogBox">
+              <p>Add a daily recovery log for your pet.</p>
+              <button class="primary-btn" id="showLogFormBtn">Add Log</button>
+            </div>
+
+            <div class="option-box" id="askAIBox">
+              <p>Get AI insights about your pet's recovery.</p>
+              <button class="primary-btn" id="showAIFormBtn">Ask AI</button>
+            </div>
+
+            <div class="option-box" id="about">
+              <h3>About PawfectCare</h3>
+              <p>
+                Hi, my name is Ana. This project started from a very personal
+                place — my dog went through surgery, and I still remember
+                feeling anxious, worried, and unsure if I was doing everything
+                right to help her recover. I wanted to create something that
+                could make this whole process a little easier for other pet
+                owners. My hope is that it helps them feel less stressed and
+                anxious, and more confident, so they can focus on loving and
+                caring for their pets during these difficult times.
+              </p>
+              <hr />
+              <p>
+                Stay tuned for more updates as I learn and grow with this
+                project! If you'd like to support this work, donations are
+                always appreciated ❤️
+              </p>
+              <button class="primary-btn" id="donationBtn">Donate</button>
+            </div>
+          </div>
+
+          <!-- PET INFO FORM -->
+          <section class="container" id="petInfoWrapper">
+            <button type="button" class="exit-btn primary-btn" id="exitPetInfoBtn">← Back</button>
+            <h2> Pet General Info </h2>
+            <div class="petinfo-flex">
+              <!-- RIGHT SIDE: IMAGE + TEXT -->
+              <div class="petinfo-side">
+                <p>
+                  Keep your pet’s info safe here! 💕 <br>
+                  Add details once and track recovery progress with ease.
+                </p>
+                <img src="{% static 'images/tag7.png' %}" alt="Happy pets" />
+              </div>
+              <!-- LEFT SIDE: FORM -->
               <form id="petInfoForm">
                 {% csrf_token %}
                 <div class="field-group">
@@ -194,22 +248,10 @@
                   <input type="text" id="petName" name="name" required />
 
                   <label for="petAge">Age (years)</label>
-                  <input
-                    type="number"
-                    id="petAge"
-                    name="age"
-                    min="0"
-                    required
-                  />
+                  <input type="number" id="petAge" name="age" min="0" required />
 
                   <label for="weight">Weight (kg)</label>
-                  <input
-                    type="number"
-                    id="weight"
-                    name="weight"
-                    step="0.1"
-                    required
-                  />
+                  <input type="number" id="weight" name="weight" step="0.1" required />
 
                   <label for="petBreed">Breed (if dog)</label>
                   <select id="petBreed" name="breed">
@@ -217,53 +259,40 @@
                   </select>
 
                   <label for="surgeryType">Type of Surgery</label>
-                  <input
-                    type="text"
-                    id="surgeryType"
-                    name="surgery_type"
-                    required
-                  />
+                  <input type="text" id="surgeryType" name="surgery_type" required />
 
                   <label for="surgeryDate">Surgery Date</label>
                   <input type="date" id="surgeryDate" name="surgery_date" />
 
                   <label for="surgeryReason">Reason / Notes</label>
-                  <textarea
-                    id="surgeryReason"
-                    name="surgery_reason"
-                    rows="3"
-                  ></textarea>
+                  <textarea id="surgeryReason" name="surgery_reason" rows="3"></textarea>
 
                   <button type="submit" class="primary-btn">
                     Save Pet Info
                   </button>
                 </div>
               </form>
+            </div>
+          </section>
+
+          <!-- DAILY LOGS -->
+          <section class="container" id="dailyLogWrapper">
+            <button type="button" class="exit-btn primary-btn" id="exitLogBtn">
+              ← Back
+            </button>
+
+            <h2>🗓 Daily Recovery Log</h2>
+            <div class="petinfo-flex">
+              <!-- RIGHT SIDE: IMAGE + TEXT -->
+              <div class="petinfo-side">
+                <p>
+                  Log your pet's daily recovery details here! 💕 <br><br>
+                  Track food, meds, energy, and notes easily.
+                </p>
+                <hr>
+                <img src="{% static 'images/logs3.png' %}" alt="Happy pets" />
               </div>
-            </section>
-
-            <!-- DAILY LOGS -->
-            <section class="container" id="dailyLogWrapper">
-              <button
-                type="button"
-                class="exit-btn primary-btn"
-                id="exitLogBtn"
-              >
-                ← Back
-              </button>
-
-              <h2>🗓 Daily Recovery Log</h2>
-              <div class="petinfo-flex">
-                <!-- RIGHT SIDE: IMAGE + TEXT -->
-                <div class="petinfo-side">
-                  <p>
-                    Log your pet's daily recovery details here! 💕 <br><br>
-                    Track food, meds, energy, and notes easily.
-                  </p>
-                  <hr>
-                  <img src="{% static 'images/logs3.png' %}" alt="Happy pets" />
-                </div>
-                <!-- LEFT SIDE: FORM -->
+              <!-- LEFT SIDE: FORM -->
               <form id="logForm">
                 {% csrf_token %}
                 <div class="field-group">
@@ -290,26 +319,9 @@
                     <label>Medications</label>
                     <div id="medications-wrapper">
                       <div class="med-row flex-row">
-                        <input
-                          type="text"
-                          name="medName[]"
-                          class="medName"
-                          placeholder="Medicine Name"
-                        />
-                        <input
-                          type="number"
-                          name="medDosage[]"
-                          class="medDosage"
-                          placeholder="Dosage (mg)"
-                          min="0"
-                        />
-                        <input
-                          type="number"
-                          name="medTimes[]"
-                          class="medTimes"
-                          placeholder="Times per Day"
-                          min="0"
-                        />
+                        <input type="text" name="medName[]" class="medName" placeholder="Medicine Name" />
+                        <input type="number" name="medDosage[]" class="medDosage" placeholder="Dosage (mg)" min="0" />
+                        <input type="number" name="medTimes[]" class="medTimes" placeholder="Times per Day" min="0" />
                       </div>
                     </div>
                     <button type="button" id="add-med">
@@ -340,93 +352,70 @@
                   </button>
                 </div>
               </form>
-            </section>
+          </section>
 
-            <!-- ================= AI SECTION ================= -->
-            <section class="container" id="aiSection">
-              <button type="button" class="exit-btn primary-btn" id="exitAIBtn">
-                ← Back
-              </button>
-              <h2>🤖 Ask AI about recovery</h2>
-              <form id="aiForm">
-    {% csrf_token %}
-    <label for="aiOption">AI Action:</label>
-    <select id="aiOption">
-      <option value="summary">Analyze Recovery</option>
-      <option value="question">Ask a Question</option>
-    </select>
-    <textarea
-      id="aiQuestion"
-      rows="3"
-      placeholder="Type your question..."
-      disabled
-    ></textarea>
-    <button type="submit" class="primary-btn">Ask AI</button>
-</form>
+          <!-- ================= AI SECTION ================= -->
+          <section class="container" id="aiSection">
+            <button type="button" class="exit-btn primary-btn" id="exitAIBtn">
+              ← Back
+            </button>
+            <h2>🤖 Ask AI about recovery</h2>
+            <form id="aiForm">
+              {% csrf_token %}
+              <label for="aiOption">AI Action:</label>
+              <select id="aiOption">
+                <option value="summary">Analyze Recovery</option>
+                <option value="question">Ask a Question</option>
+              </select>
+              <textarea id="aiQuestion" rows="3" placeholder="Type your question..." disabled></textarea>
+              <button type="submit" class="primary-btn">Ask AI</button>
+            </form>
 
-              <div id="aiAnswer"></div>
-            </section>
+            <div id="aiAnswer"></div>
+          </section>
 
-            <!-- RESET -->
-            <section class="container reset-wrapper">
-              <button type="button" onclick="resetAllData()" class="reset-btn">
-                Reset All Data
-              </button>
-            </section>
-          </div>
-        </div>
-      </section>
-    </main>
-    <!-- FOOTER -->
-    <footer class="site-footer">
-      <div class="footer-content">
-        <div class="footer-left">
-          <h4>Useful Links</h4>
-          <ul>
-            <li>
-              <a
-                href="https://www.petmd.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                >PetMD</a
-              >
-            </li>
-            <li>
-              <a
-                href="https://www.rspca.org.uk/adviceandwelfare/pets"
-                target="_blank"
-                rel="noopener noreferrer"
-                >RSPCA Advice</a
-              >
-            </li>
-          </ul>
-        </div>
-        <div class="footer-right">
-          <h4>Contact Me</h4>
-          <ul>
-            <li>
-              <a
-                href="https://github.com/Anci82"
-                target="_blank"
-                rel="noopener noreferrer"
-                >GitHub</a
-              >
-            </li>
-            <li><a href="mailto:anashuttleworth@hotmail.com">Email Me</a></li>
-            <li>
-              <a
-                href="https://donationlink.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                >Donate ❤️</a
-              >
-            </li>
-          </ul>
+          <!-- RESET -->
+          <section class="container reset-wrapper">
+            <button type="button" onclick="resetAllData()" class="reset-btn">
+              Reset All Data
+            </button>
+          </section>
         </div>
       </div>
-    </footer>
+    </section>
+  </main>
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <h4>Useful Links</h4>
+        <ul>
+          <li>
+            <a href="https://www.petmd.com/" target="_blank" rel="noopener noreferrer">PetMD</a>
+          </li>
+          <li>
+            <a href="https://www.rspca.org.uk/adviceandwelfare/pets" target="_blank" rel="noopener noreferrer">RSPCA
+              Advice</a>
+          </li>
+        </ul>
+      </div>
+      <div class="footer-right">
+        <h4>Contact Me</h4>
+        <ul>
+          <li>
+            <a href="https://github.com/Anci82" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </li>
+          <li><a href="mailto:anashuttleworth@hotmail.com">Email Me</a></li>
+          <li>
+            <a href="https://donationlink.com" target="_blank" rel="noopener noreferrer">Donate ❤️</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </footer>
 
-    <script src="{% static 'js/script.js' %}"></script>
-    <script src="{% static 'js/tip-of-the-day.js' %}"></script>
-  </body>
+  <script src="{% static 'js/script.js' %}"></script>
+  <script src="{% static 'js/tip-of-the-day.js' %}"></script>
+</body>
+
 </html>

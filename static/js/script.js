@@ -180,7 +180,107 @@ window.addEventListener("scroll", () => {
   lastScroll = currentScroll;
 });
 
+// SLIDER
+document.addEventListener("DOMContentLoaded", () => {
+  const slides = document.querySelectorAll("#demoPlaceholder .tour-slide");
+  const dots = document.querySelectorAll("#demoPlaceholder .tour-dot");
+
+  if (!slides.length) return; // safety
+
+  let currentIndex = 0;
+  let timerId = null;
+
+  function showSlide(index) {
+    slides.forEach((slide, i) => {
+      slide.classList.toggle("active", i === index);
+    });
+    dots.forEach((dot, i) => {
+      dot.classList.toggle("active", i === index);
+    });
+    currentIndex = index;
+  }
+
+  function nextSlide() {
+    const nextIndex = (currentIndex + 1) % slides.length;
+    showSlide(nextIndex);
+  }
+
+  function startAutoRotate() {
+    stopAutoRotate();
+    timerId = setInterval(nextSlide, 4000); // 4s per slide
+  }
+
+  function stopAutoRotate() {
+    if (timerId) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+  }
+
+  dots.forEach(dot => {
+    dot.addEventListener("click", () => {
+      const index = parseInt(dot.dataset.index, 10);
+      showSlide(index);
+      startAutoRotate(); // restart timer on manual click
+    });
+  });
+
+  // init
+  showSlide(0);
+  startAutoRotate();
+});
+
+
 renderPreLoginHeader();
+document.addEventListener("DOMContentLoaded", () => {
+  const slides = document.querySelectorAll("#demoPlaceholder .tour-slide");
+  const dots = document.querySelectorAll("#demoPlaceholder .tour-dot");
+
+  if (!slides.length) return; // safety
+
+  let currentIndex = 0;
+  let timerId = null;
+
+  function showSlide(index) {
+    slides.forEach((slide, i) => {
+      slide.classList.toggle("active", i === index);
+    });
+    dots.forEach((dot, i) => {
+      dot.classList.toggle("active", i === index);
+    });
+    currentIndex = index;
+  }
+
+  function nextSlide() {
+    const nextIndex = (currentIndex + 1) % slides.length;
+    showSlide(nextIndex);
+  }
+
+  function startAutoRotate() {
+    stopAutoRotate();
+    timerId = setInterval(nextSlide, 4000); // 4s per slide
+  }
+
+  function stopAutoRotate() {
+    if (timerId) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+  }
+
+  dots.forEach(dot => {
+    dot.addEventListener("click", () => {
+      const index = parseInt(dot.dataset.index, 10);
+      showSlide(index);
+      startAutoRotate(); // restart timer on manual click
+    });
+  });
+
+  // init
+  showSlide(0);
+  startAutoRotate();
+});
+
 /* ============================
    PET INFO
 ============================ */
