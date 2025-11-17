@@ -107,6 +107,7 @@ function handleLogin() {
     .then((data) => {
       if (data.success) {
         showNotification("Logged in as " + data.username);
+      
         localStorage.removeItem("petLogs");
         localStorage.removeItem("petInfo");
         welcomeSection.style.display = "none";
@@ -143,6 +144,7 @@ function handleLogout() {
     .then((res) => res.json())
     .then((data) => {
       if (data.success) {
+        
         welcomeSection.style.display = "block";
         dashboardSection.style.display = "none";
         petInfo = {};
