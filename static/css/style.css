@@ -413,8 +413,8 @@ header .header-right button:hover {
     background-attachment: scroll!important;  /* avoid weird fixed behaviour */
 
     /* Give it height */
-    padding: 4rem 1.5rem 6rem;   /* room above + below */
-    min-height: calc(100vh - 180px);  /* below the fixed header */
+    padding: 2rem 1.5rem 2rem;   /* room above + below */
+    min-height: calc(100vh - 180px);  
 
     display: flex;
     align-items: center;
@@ -441,7 +441,7 @@ header .header-right button:hover {
     position: relative;    /* NO MORE absolute here */
     z-index: 2;
     width: 100%;
-    max-width: 1300px;
+    max-width: 1800px;
     
     display: flex;
     flex-wrap: wrap;
