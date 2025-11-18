@@ -25,6 +25,7 @@ let slot = 0; // 0=cat, 1=dog, 2=appt (when available)
       border-radius: .5rem;
       padding: .25rem .5rem;
       animation: tipPulse 1.2s ease-in-out infinite;
+      font-size: 1.5rem;
     }
   `;
   document.head.appendChild(style);

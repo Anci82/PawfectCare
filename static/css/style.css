@@ -351,7 +351,7 @@ header .header-right .btn-group {
 
 .auth-buttons {
   display: flex;
-  gap: 0.4rem;
+  gap: 1rem;
   justify-content: center!important;
 }
 
@@ -1467,6 +1467,12 @@ ul li a:focus {
     height: 200px;
     object-fit: contain;
    }
-}
+   .footer-content {
+    margin: 1rem;
+   }
+   .footer-left, .footer-right {
+      min-width: auto;
+  }
+  }
 
 
