@@ -5,6 +5,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Page loaded, JS running");
+  renderPreLoginHeader(); 
 });
 const headerRight = document.getElementById("headerRight");
 const welcomeSection = document.getElementById("welcomeSection");
@@ -34,38 +35,73 @@ const csrftoken = getCookie("csrftoken");
 
 function renderPreLoginHeader() {
   headerRight.innerHTML = `
-        <div class="login-group">
-            <input type="text" id="loginUsername" placeholder="Username or email" />
-            <input type="password" id="loginPassword" placeholder="Password" />
+    <div class="auth-compact">
+      <div class="auth-meta">
+        <div class="auth-title">
+          Welcome to <span class="auth-brand">PawfectCare</span> 🐾
         </div>
-        <div class="btn-group">
-            <button id="loginBtn" class="primary-btn">Log In</button>
-            <button id="registerBtn" class="secondary-btn">Register</button>
+        <div class="auth-subtitle">
+          Log in to track your pet’s recovery.
         </div>
-        <a href="#" id="forgotPasswordLink" class="link-small">Forgot password?</a>    
-    `;
-  document.getElementById("loginBtn").addEventListener("click", handleLogin);
+      </div>
+
+      <div class="auth-buttons">
+        <button id="showLogin" class="primary-btn smallbtn">Log In</button>
+        <button id="registerBtn" class="primary-btn smallbtn">Register</button>
+      </div>
+    </div>
+  `;
+
+  document
+    .getElementById("showLogin")
+    .addEventListener("click", renderLoginForm);
+
   document
     .getElementById("registerBtn")
     .addEventListener("click", handleRegister);
 }
 
-function handleRegister() {
-  // Replace headerRight with registration form
+function renderLoginForm() {
   headerRight.innerHTML = `
-        <form id="regForm" class="login-group">
-            <input type="email" name="email" placeholder="Email" required />
-            <input type="text" name="username" placeholder="Username" />
-            <input type="password" name="password" placeholder="Password" required />
-            <div class="btn-group">
-                <button type="submit" class="primary-btn">Register</button>
-                <button type="button" id="cancelReg" class="secondary-btn">Cancel</button>
-            </div>
-        </form>
-    `;
+    <form id="loginForm" class="login-group">
+      <input type="text" id="loginUsername" placeholder="Username or email" required />
+      <input type="password" id="loginPassword" placeholder="Password" required />
+      <div class="btn-group">
+        <button type="submit" class="primary-btn">Log In</button>
+        <button type="button" id="cancelLogin" class="secondary-btn">Cancel</button>
+      </div>
+      <a href="#" id="forgotPasswordLink" class="link-small">Forgot password?</a>
+    </form>
+  `;
+
+  const loginForm = document.getElementById("loginForm");
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    handleLogin();
+  });
+
+  document.getElementById("cancelLogin").addEventListener("click", () => {
+    renderPreLoginHeader();
+  });
+}
+
+
+
+function handleRegister() {
+  headerRight.innerHTML = `
+    <form id="regForm" class="login-group">
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="text" name="username" placeholder="Username" />
+      <input type="password" name="password" placeholder="Password" required />
+      <div class="btn-group">
+        <button type="submit" class="primary-btn">Register</button>
+        <button type="button" id="cancelReg" class="secondary-btn">Cancel</button>
+      </div>
+    </form>
+  `;
 
   document.getElementById("cancelReg").addEventListener("click", () => {
-    renderPreLoginHeader(); // go back to login view
+    renderPreLoginHeader();
   });
 
   document.getElementById("regForm").addEventListener("submit", (e) => {
@@ -73,15 +109,14 @@ function handleRegister() {
     const formData = new FormData(e.target);
 
     fetch("/register/", {
-      // Django endpoint
       method: "POST",
       body: formData,
     })
-      .then((res) => res.json()) // or text depending on your view
+      .then((res) => res.json())
       .then((data) => {
         if (data.success) {
           showNotification("Registration successful!");
-          renderPreLoginHeader(); // go back to login view
+          renderPreLoginHeader();
         } else {
           showNotification("Error: " + (data.error || "Unknown error"));
         }
@@ -89,6 +124,7 @@ function handleRegister() {
       .catch((err) => console.error("Registration fetch error:", err));
   });
 }
+
 
 function handleLogin() {
   const username = document.getElementById("loginUsername").value.trim();
@@ -107,7 +143,7 @@ function handleLogin() {
     .then((data) => {
       if (data.success) {
         showNotification("Logged in as " + data.username);
-      
+
         localStorage.removeItem("petLogs");
         localStorage.removeItem("petInfo");
         welcomeSection.style.display = "none";
@@ -122,17 +158,7 @@ function handleLogin() {
     })
     .catch((err) => console.error("Login fetch error:", err));
 }
-// ========== ENTER KEY LISTENER ==========
-document.addEventListener("DOMContentLoaded", () => {
-  const loginInputs = document.querySelectorAll("#loginUsername, #loginPassword");
-  loginInputs.forEach(input => {
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        handleLogin();
-      }
-    });
-  });
-});
+
 function handleLogout() {
   const formData = new FormData();
   formData.append("csrfmiddlewaretoken", getCookie("csrftoken"));
@@ -232,56 +258,6 @@ document.addEventListener("DOMContentLoaded", () => {
   startAutoRotate();
 });
 
-
-renderPreLoginHeader();
-document.addEventListener("DOMContentLoaded", () => {
-  const slides = document.querySelectorAll("#demoPlaceholder .tour-slide");
-  const dots = document.querySelectorAll("#demoPlaceholder .tour-dot");
-
-  if (!slides.length) return; // safety
-
-  let currentIndex = 0;
-  let timerId = null;
-
-  function showSlide(index) {
-    slides.forEach((slide, i) => {
-      slide.classList.toggle("active", i === index);
-    });
-    dots.forEach((dot, i) => {
-      dot.classList.toggle("active", i === index);
-    });
-    currentIndex = index;
-  }
-
-  function nextSlide() {
-    const nextIndex = (currentIndex + 1) % slides.length;
-    showSlide(nextIndex);
-  }
-
-  function startAutoRotate() {
-    stopAutoRotate();
-    timerId = setInterval(nextSlide, 4000); // 4s per slide
-  }
-
-  function stopAutoRotate() {
-    if (timerId) {
-      clearInterval(timerId);
-      timerId = null;
-    }
-  }
-
-  dots.forEach(dot => {
-    dot.addEventListener("click", () => {
-      const index = parseInt(dot.dataset.index, 10);
-      showSlide(index);
-      startAutoRotate(); // restart timer on manual click
-    });
-  });
-
-  // init
-  showSlide(0);
-  startAutoRotate();
-});
 
 /* ============================
    PET INFO
@@ -718,7 +694,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Expose to other modules (login/logout handlers)
   window.displayVetInfo = displayVetInfo; // use after login
-  window.resetVetUI = resetVetUI;         // use on logout
+  window.resetVetUI = resetVetUI; 
+  displayVetInfo();        // use on logout
 });
 
 

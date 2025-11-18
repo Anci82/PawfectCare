@@ -319,6 +319,49 @@ header .header-right .btn-group {
     margin-top: 0.3rem;
 }
 
+.auth-compact {
+  display: flex;
+  flex-direction: column;      
+  align-items: center;     
+  gap: 0.3rem;
+  text-align: right;
+}
+
+.auth-meta {
+  max-width: 300px;
+  animation:flash 1.5s infinite ease-in-out;
+  color: darkorchid;           /* stops it going super wide */
+}
+
+.auth-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.auth-brand {
+  font-family: "Indie Flower", cursive; /* or whatever you're using */
+  font-weight: 700;
+}
+
+.auth-subtitle {
+  font-size: 1rem;
+  text-align: center;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center!important;
+}
+
+.smallbtn {
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  margin-top: 1rem;
+}
+
+
 header .header-right button {
     padding: 0.35rem 0.8rem;
     font-size: 0.85rem;
@@ -1008,6 +1051,11 @@ header .header-right button:hover {
     margin-bottom: 1rem;
     font-size: 1.2rem;   
     background: linear-gradient(135deg, #f5f5f5, rgb(238, 223, 196));
+}
+
+#vetSummaryDate{
+  animation: sparkleTwinkle 4s infinite ease-in-out;
+  color: rgb(224, 58, 58);
 }
 
 #vetInfoForm{
