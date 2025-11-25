@@ -1143,32 +1143,31 @@ document.getElementById("copyAllBtn").addEventListener("click", () => {
 const aiForm = document.getElementById("aiForm");
 const aiQuestion = document.getElementById("aiQuestion");
 const aiAnswer = document.getElementById("aiAnswer");
-const aiOption = document.getElementById("aiOption");
+const aiAnswerWrapper = document.getElementById("aiAnswerWrapper");
+const aiFollowupBtn = document.getElementById("aiFollowupBtn");
 
-// Enable/disable textarea based on dropdown
-aiOption.addEventListener("change", function () {
-  aiQuestion.disabled = this.value !== "question";
-});
+function getCsrfToken() {
+  const csrfTokenEl = document.querySelector("[name=csrfmiddlewaretoken]");
+  return csrfTokenEl ? csrfTokenEl.value : "";
+}
 
-aiForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  aiAnswer.innerText = "Thinking... 🤖";
+async function sendAiRequest(option, questionText = "") {
+  aiAnswerWrapper.style.display = "block";
+  aiAnswer.innerText = option === "summary"
+    ? "Analyzing recovery... 🤖"
+    : "Thinking about your question... 🤔";
 
-  const option = aiOption.value;
-  const question = aiQuestion.value.trim();
-
-  // Always include recent logs for context
   const formData = new FormData();
-  formData.append("logs", JSON.stringify(logs));
+  formData.append("logs", JSON.stringify(logs || []));  // reuse your logs var
   formData.append("option", option);
-  if (option === "question" && question) {
-    formData.append("question", question);
+
+  if (option === "question" && questionText.trim()) {
+    formData.append("question", questionText.trim());
   }
 
-  // CSRF token
-  const csrfTokenEl = document.querySelector("[name=csrfmiddlewaretoken]");
-  if (csrfTokenEl) {
-    formData.append("csrfmiddlewaretoken", csrfTokenEl.value);
+  const csrfToken = getCsrfToken();
+  if (csrfToken) {
+    formData.append("csrfmiddlewaretoken", csrfToken);
   }
 
   try {
@@ -1187,29 +1186,28 @@ aiForm.addEventListener("submit", async (e) => {
     console.error(err);
     aiAnswer.innerText = "Error: " + err.message;
   }
+}
 
-  aiQuestion.value = ""; // reset textarea
+// 1) Analyze Recovery (summary)
+aiForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  sendAiRequest("summary");
+});
+
+// 2) Ask follow-up question
+aiFollowupBtn.addEventListener("click", () => {
+  const question = aiQuestion.value.trim();
+  if (!question) {
+    aiAnswer.innerText =
+      "Please type a question first so I know what to help with. 🐾";
+    aiAnswerWrapper.style.display = "block";
+    return;
+  }
+  sendAiRequest("question", question);
+  aiQuestion.value = "";
 });
 
 
-// ============================
-// RESET ALL DATA
-// ============================
-function resetAllData() {
-  if (confirm("Are you sure you want to clear all pet info and logs?")) {
-    localStorage.removeItem("petInfo");
-    localStorage.removeItem("petLogs");
-    petInfo = {};
-    logs = [];
-    petInfoContent.innerText = "No pet info saved yet.";
-    displayLogs();
-    petInfoForm.reset();
-    logForm.reset();
-    petInfoWrapper.style.display = "block";
-    rightBoxes.style.display = "none";
-    showNotification("All data cleared!");
-  }
-}
 // DASHBOARD FORM LOGIC
 // ============================
 const showLogFormBtn = document.getElementById("showLogFormBtn");
@@ -1264,6 +1262,11 @@ backPetBtn.addEventListener('click', () => {
 });
 exitAIBtn.addEventListener("click", () => {
   aiSection.style.display = "none";
+  if (aiAnswer) aiAnswer.innerText = "";
+  if (aiAnswerWrapper) aiAnswerWrapper.style.display = "none";
+
+    // Clear follow-up question textarea
+  if (aiQuestion) aiQuestion.value = "";
   // ✅ restore everything dashboard-related
   displayPetInfo();
   displayLogs(); // optional, just to be sure logs are up to date

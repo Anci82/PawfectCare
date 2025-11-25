@@ -23,6 +23,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
+from .ai_utils import call_gemini_model          # your Gemini caller
+from .utils_ai import compute_recovery_flags     # helper above
 
 
 
@@ -382,118 +384,111 @@ def ajax_delete_log(request, log_id):
     return JsonResponse({"success": False, "error": "Invalid request"})
 
 
-import os
-import requests
-import json
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-# Note: For production use, install the Google GenAI SDK (pip install google-genai) 
-# for better handling, but this 'requests' example works perfectly for direct API calls.
-
-# --- Configuration ---
-# It is best practice to secure your API key as an environment variable.
-# The key for Gemini is passed as a query parameter in the URL.
-GEMINI_API_KEY = config("GEMINI_API_KEY")
-GEMINI_MODEL_NAME = "gemini-2.5-flash-preview-05-20" # A fast and capable model
-
-def call_gemini_model(prompt):
-    """
-    Sends a POST request to the Gemini API to generate content.
-    """
-    if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_DEFAULT_API_KEY_HERE":
-        return "Error: GEMINI_API_KEY not configured."
-
-    # 1. Gemini API Endpoint Structure
-    # The API key is included as a query parameter.
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{GEMINI_MODEL_NAME}:generateContent?key={GEMINI_API_KEY}"
-    )
-
-    # 2. Gemini API Payload Structure
-    # The prompt must be wrapped in a 'contents' array with 'parts'.
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt}
-                ]
-            }
-        ]
-    }
-
-    # Standard JSON headers
-    headers = {"Content-Type": "application/json"}
-
-    try:
-        # Send the POST request
-        response = requests.post(url, headers=headers, json=payload)
-        response.raise_for_status() # Raise exception for bad status codes (4xx or 5xx)
-        
-        result = response.json()
-        
-        # 3. Gemini API Response Parsing
-        # The generated text is typically nested deeply within the response object.
-        generated_text = result['candidates'][0]['content']['parts'][0]['text']
-        
-        return generated_text
-
-    except requests.exceptions.RequestException as e:
-        # Handle connection errors, timeouts, and HTTP errors
-        return f"API Request Error: {str(e)}"
-    except KeyError:
-        # Handle errors if the JSON structure is unexpected (e.g., block reason)
-        return f"Error: Unexpected response format from API. Details: {json.dumps(result, indent=2)}"
 
 
-@csrf_exempt  # for dev only
+
 @require_POST
+@csrf_exempt  # or remove if you're handling CSRF tokens from JS properly
 def ai_helper(request):
+    option = request.POST.get("option", "summary")
+    logs_raw = request.POST.get("logs", "[]")
+    question = request.POST.get("question", "")
+
     try:
-        option = request.POST.get("option", "summary")
-        question = request.POST.get("question", "").strip()
-        logs = json.loads(request.POST.get("logs", "[]"))
+        logs = json.loads(logs_raw)
+    except json.JSONDecodeError:
+        logs = []
 
-        # Format recent logs for the prompt
-        recent_logs = []
-        for log in logs[-7:]:
-            meds = ", ".join(
-                f"{m.get('name','—')} ({m.get('dosage',0)}mg x {m.get('times',0)})"
-                for m in log.get("meds", [])
-            )
-            recent_logs.append(
-                f"{log.get('date','?')}: Food {log.get('food','—')}, "
-                f"Meds {meds or '—'}, Energy {log.get('energy','?')}, "
-                f"Notes {log.get('notes','—')}, "
-                f"Photo {'uploaded' if log.get('photo') else 'none'}"
-            )
-        recent_logs_text = "\n".join(recent_logs)
+    flags = compute_recovery_flags(logs)
+    red_flag_level = flags["red_flag_level"]
+    rule_summary_text = flags["rule_summary_text"]
+    recent_logs_text = flags["recent_logs_text"]
 
-        # Build base prompt
-        prompt = f"Recovery logs (last 7 days):\n{recent_logs_text}\n\n"
+    if option == "summary":
+        prompt = f"""
+You are helping a pet owner understand their dog or cat's recovery after surgery.
 
-        if option == "question" and question:
-            prompt += f"""Owner's question: "{question}"
+You will receive:
+- A simple rule-based risk summary from the app (this is NOT a diagnosis).
+- A list of the last few logs with food %, energy level, and notes.
 
-            Answer clearly in 2–4 short sentences.
-            Highlight the most important advice or warning signs if relevant.
-            """
-        else:
-            prompt += """
-            Please provide a concise recovery analysis based on the logs.
+Your tasks:
+1. Explain, in simple and calm language, how the recovery seems to be going overall.
+2. Comment separately on:
+   - appetite,
+   - energy,
+   - wound/other symptoms mentioned in the notes.
+3. Use the rule-based risk summary to classify the situation as:
+   - "On track"
+   - "Needs monitoring"
+   - "Contact a vet soon"
 
-            - Use short bullet points (max 6).
-            - Mention both positive progress and any concerns.
-            - Highlight what the owner should pay attention to (e.g., energy, appetite, wounds).
-            - Keep the answer under 150 words.
-            - Avoid generic advice; focus on specifics from the logs.
-            - If unsure, suggest consulting a vet.
-            """
-        # Call Gemini
-        ai_response = call_gemini_model(prompt)
+Safety rules:
+- You are NOT a vet and cannot diagnose.
+- Never say that there is "no need" to see a vet.
+- If the risk level is "high", advise contacting a vet soon (same day if the owner is worried).
+- If the owner is ever unsure or worried, gently remind them to contact their vet.
 
-    except Exception as e:
-        ai_response = f"An unexpected error occurred: {str(e)}"
+Always respond in this exact structure (short paragraphs, 1–3 sentences each):
 
-    return JsonResponse({"generated_text": ai_response})
+Overall status:
+- ...
+
+Appetite:
+- ...
+
+Energy:
+- ...
+
+Wound / other notes:
+- ...
+
+Advice:
+- Include a short reminder to follow the vet's instructions.
+- Include a gentle reminder to keep giving prescribed medication as the vet instructed, unless the vet says otherwise.
+- Include a reminder to contact a vet urgently for severe symptoms or if they feel something is wrong.
+
+Rule-based risk summary (from the app, do NOT just repeat it, use it to guide your explanation):
+{rule_summary_text}
+
+Rule-based risk level: {red_flag_level}
+
+Recent logs (newest first):
+{recent_logs_text}
+"""
+    else:
+        # follow-up question mode
+        prompt = f"""
+You are helping a pet owner understand their dog or cat's recovery after surgery.
+
+You have:
+- A rule-based risk summary from the app (NOT a diagnosis).
+- A list of recent logs (food %, energy, notes).
+- A specific question from the owner.
+
+Answer the question in a calm, clear way based on the logs and risk summary.
+
+Safety rules:
+- You are NOT a vet and cannot diagnose.
+- Never guarantee that everything is fine.
+- Encourage the owner to contact their own vet if they are worried.
+
+At the end, add 2–3 short bullet points that:
+- remind them to follow the vet's instructions,
+- remind them to keep giving medication as the vet instructed (unless the vet says otherwise),
+- remind them to contact a vet urgently for severe symptoms or if something feels wrong.
+
+Rule-based risk summary:
+{rule_summary_text}
+
+Rule-based risk level: {red_flag_level}
+
+Recent logs (newest first):
+{recent_logs_text}
+
+Owner's question:
+{question}
+"""
+
+    ai_text = call_gemini_model(prompt)
+    return JsonResponse({"generated_text": ai_text})
