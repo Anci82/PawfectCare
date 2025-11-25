@@ -184,12 +184,124 @@ function handleLogout() {
 
 function renderPostLoginHeader(username) {
   headerRight.innerHTML = `
-        <span class="user-icon">👤</span>
-        <span class="username">${username}</span>
-        <button id="signOutBtn" class="secondary-btn">Sign Out</button>
-    `;
-  document.getElementById("signOutBtn").addEventListener("click", handleLogout);
+    <div class="user-menu">
+      <button class="user-avatar-btn" id="userMenuToggle" type="button">
+        <span class="avatar-icon">👤</span>
+        <span class="avatar-name">${username}</span>
+      </button>
+
+      <div class="user-menu-panel" id="userMenuPanel">
+        <button type="button" class="user-menu-item" id="myAccountBtn">
+          My account
+        </button>
+        <button type="button" class="user-menu-item" id="changePasswordBtn">
+          Change password
+        </button>
+        <button type="button" class="user-menu-item danger-item" id="signOutBtn">
+          Sign out
+        </button>
+      </div>
+
+      <div class="account-panel" id="accountPanel">
+        <h4>My account</h4>
+        <div class="account-info-row"><strong>Username:</strong> <span id="accountUsername"></span></div>
+        <div class="account-info-row"><strong>Email:</strong> <span id="accountEmail"></span></div>
+        <div class="account-info-row"><strong>Pet name:</strong> <span id="accountPetName"></span></div>
+
+        <div class="account-actions">
+          <button type="button" id="accountEditBtn" class="secondary-btn smallbtn">
+            Edit account
+          </button>
+          <button type="button" id="accountDeleteBtn" class="secondary-btn smallbtn danger-btn">
+            Delete account
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const accountUsernameEl = document.getElementById("accountUsername");
+  const accountEmailEl = document.getElementById("accountEmail");
+  const accountPetNameEl = document.getElementById("accountPetName");
+
+  if (accountUsernameEl) accountUsernameEl.textContent = username;
+
+  const email = window.currentUserEmail || "not-set@example.com";
+  const petName = window.currentPetName || "Your pet";
+
+  if (accountEmailEl) accountEmailEl.textContent = email;
+  if (accountPetNameEl) accountPetNameEl.textContent = petName;
+
+  // Elements
+  const userMenuToggle = document.getElementById("userMenuToggle");
+  const userMenuPanel = document.getElementById("userMenuPanel");
+  const accountPanel = document.getElementById("accountPanel");
+
+  const myAccountBtn = document.getElementById("myAccountBtn");
+  const changePasswordBtn = document.getElementById("changePasswordBtn");
+  const signOutBtn = document.getElementById("signOutBtn");
+  const accountEditBtn = document.getElementById("accountEditBtn");
+  const accountDeleteBtn = document.getElementById("accountDeleteBtn");
+
+  // Toggle main dropdown
+  userMenuToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    userMenuPanel.classList.toggle("open");
+    // hide account panel when re-opening/closing menu
+    if (!userMenuPanel.classList.contains("open")) {
+      accountPanel.classList.remove("open");
+    }
+  });
+
+  // My account: show account panel
+  myAccountBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    accountPanel.classList.toggle("open");
+  });
+
+  // Change password (fake for now)
+  changePasswordBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    showNotification("Change password coming soon 🛠️");
+  });
+
+  // Sign out from menu
+  signOutBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    handleLogout();
+  });
+
+  // Edit account (fake)
+  accountEditBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    showNotification("Edit account coming soon 🛠️");
+  });
+
+  // Delete account (fake)
+  accountDeleteBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    showNotification("Delete account feature coming soon 🐾", "error");
+  });
+
+  // Click outside closes both dropdown + account panel
+  document.addEventListener(
+    "click",
+    function handleOutside(e) {
+      if (
+        !userMenuPanel.contains(e.target) &&
+        !accountPanel.contains(e.target) &&
+        !userMenuToggle.contains(e.target)
+      ) {
+        userMenuPanel.classList.remove("open");
+        accountPanel.classList.remove("open");
+      }
+    },
+    { once: true }
+  );
 }
+
+
+
 // HIDING HEADER
 let lastScroll = 0;
 const header = document.querySelector(".header-wrapper");

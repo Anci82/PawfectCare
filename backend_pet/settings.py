@@ -135,6 +135,13 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
 # ----------------------------
+# SESSION SETTINGS
+# ----------------------------
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 2 weeks
+
+
+# ----------------------------
 # DEFAULTS
 # ----------------------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
