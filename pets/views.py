@@ -55,8 +55,75 @@ def user_login(request):
     user = authenticate(request, username=username, password=password)
     if user:
         login(request, user)
-        return JsonResponse({"success": True, "username": user.username})
+
+        # 🔹 Get first pet name for this owner (or None if no pets yet)
+        pet_name = (
+            Pet.objects
+            .filter(owner=user)
+            .values_list('name', flat=True)
+            .first()
+        )
+
+        return JsonResponse({
+            "success": True,
+            "username": user.username,
+            "email": user.email,
+            "pet_name": pet_name,
+        })
+
     return JsonResponse({"success": False, "error": "Invalid credentials"})
+
+@csrf_exempt
+@login_required
+def update_account(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST required"}, status=400)
+
+    username = (request.POST.get("username") or "").strip()
+    email = (request.POST.get("email") or "").strip()
+
+    user = request.user
+
+    if not email:
+        return JsonResponse(
+            {"success": False, "error": "Email is required"},
+            status=400,
+        )
+
+    if not username:
+        username = user.username  # keep current if empty
+
+    # Username length rule (same as register)
+    if len(username) > 15:
+        return JsonResponse(
+            {"success": False, "error": "Username must be 15 characters or fewer."},
+            status=400,
+        )
+
+    # Uniqueness checks (ignore current user)
+    if User.objects.filter(username=username).exclude(pk=user.pk).exists():
+        return JsonResponse(
+            {"success": False, "error": "Username already taken"},
+            status=400,
+        )
+
+    if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+        return JsonResponse(
+            {"success": False, "error": "Email already in use"},
+            status=400,
+        )
+
+    # Save changes
+    user.username = username
+    user.email = email
+    user.save()
+
+    return JsonResponse({
+        "success": True,
+        "username": user.username,
+        "email": user.email,
+    })
+
 
 
 @csrf_exempt

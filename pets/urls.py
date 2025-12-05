@@ -16,6 +16,7 @@ urlpatterns = [
     path("ajax-delete-log/<int:log_id>/", views.ajax_delete_log, name="ajax_delete_log"),
     path('ajax-update-log/<int:log_id>/', views.ajax_update_log, name='ajax_update_log'),
     path("vet-info/", views.vet_info_view, name="vet_info"),
+    path("update-account/", views.update_account, name="update_account"),
 
 
 ]

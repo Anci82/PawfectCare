@@ -1,11 +1,10 @@
-
 /* ============================
    LOGIN / HEADER
 ============================ */
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Page loaded, JS running");
-  renderPreLoginHeader(); 
+  renderPreLoginHeader();
 });
 const headerRight = document.getElementById("headerRight");
 const welcomeSection = document.getElementById("welcomeSection");
@@ -85,8 +84,6 @@ function renderLoginForm() {
   });
 }
 
-
-
 function handleRegister() {
   headerRight.innerHTML = `
     <form id="regForm" class="login-group">
@@ -125,7 +122,6 @@ function handleRegister() {
   });
 }
 
-
 function handleLogin() {
   const username = document.getElementById("loginUsername").value.trim();
   const password = document.getElementById("loginPassword").value;
@@ -144,11 +140,22 @@ function handleLogin() {
       if (data.success) {
         showNotification("Logged in as " + data.username);
 
+        // 🔹 Store current user globals
+        window.currentUsername = data.username;
+        window.currentUserEmail = data.email || "";
+        window.currentPetName = data.pet_name || null; // comes from Django now
+
+        // clear local caches
         localStorage.removeItem("petLogs");
         localStorage.removeItem("petInfo");
+
         welcomeSection.style.display = "none";
         dashboardSection.style.display = "block";
+
+        // this will call updateAccountPanel() inside
         renderPostLoginHeader(data.username);
+
+        // still do your usual data fetches
         fetchPetInfo();
         displayLogs();
         displayVetInfo();
@@ -170,7 +177,6 @@ function handleLogout() {
     .then((res) => res.json())
     .then((data) => {
       if (data.success) {
-        
         welcomeSection.style.display = "block";
         dashboardSection.style.display = "none";
         petInfo = {};
@@ -181,6 +187,74 @@ function handleLogout() {
       }
     });
 }
+/* ============================
+   ACCOUNT HELPERS
+============================ */
+
+// 🔹 Update the My Account panel fields from globals
+function updateAccountPanel() {
+  const accountUsernameEl = document.getElementById("accountUsername");
+  const accountEmailEl = document.getElementById("accountEmail");
+  const accountPetNameEl = document.getElementById("accountPetName");
+
+  if (accountUsernameEl) {
+    accountUsernameEl.textContent = window.currentUsername || "—";
+  }
+  if (accountEmailEl) {
+    accountEmailEl.textContent = window.currentUserEmail || "—";
+  }
+  if (accountPetNameEl) {
+    accountPetNameEl.textContent = window.currentPetName || "—";
+  }
+}
+
+// 🔹 Call this from wherever you know the pet name (e.g. in fetchPetInfo)
+function setCurrentPetName(name) {
+  window.currentPetName = name || "Your pet";
+  updateAccountPanel();
+}
+function updateAccountOnServer(newUsername, newEmail) {
+  const formData = new FormData();
+  formData.append("username", newUsername);
+  formData.append("email", newEmail);
+  formData.append("csrfmiddlewaretoken", getCookie("csrftoken"));
+
+  fetch("/update-account/", {
+    method: "POST",
+    body: formData,
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success) {
+        // update globals
+        window.currentUsername = data.username;
+        window.currentUserEmail = data.email;
+
+        // refresh account panel
+        updateAccountPanel();
+
+        // update avatar label in header
+        const avatarNameEl = document.querySelector(
+          ".user-avatar-btn .avatar-name"
+        );
+        if (avatarNameEl) {
+          avatarNameEl.textContent = data.username;
+        }
+
+        showNotification("Account updated ✅");
+      } else {
+        showNotification("Account update failed: " + data.error);
+      }
+    })
+    .catch((err) => {
+      console.error("Update account error:", err);
+      showNotification("Account update failed (network error)");
+    });
+}
+
+/* ============================
+   HEADER AFTER LOGIN
+============================ */
 
 function renderPostLoginHeader(username) {
   headerRight.innerHTML = `
@@ -216,21 +290,28 @@ function renderPostLoginHeader(username) {
             Delete account
           </button>
         </div>
+
+        <div class="edit-account-form" id="editAccountForm">
+          <h5>Edit account</h5>
+
+          <label>Username</label>
+          <input type="text" id="editUsername" class="edit-input" />
+
+          <label>Email</label>
+          <input type="email" id="editEmail" class="edit-input" />
+
+          <div class="edit-actions">
+            <button id="saveAccountBtn" class="primary-btn smallbtn">Save</button>
+            <button id="cancelAccountBtn" class="secondary-btn smallbtn">Cancel</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
 
-  const accountUsernameEl = document.getElementById("accountUsername");
-  const accountEmailEl = document.getElementById("accountEmail");
-  const accountPetNameEl = document.getElementById("accountPetName");
 
-  if (accountUsernameEl) accountUsernameEl.textContent = username;
-
-  const email = window.currentUserEmail || "not-set@example.com";
-  const petName = window.currentPetName || "Your pet";
-
-  if (accountEmailEl) accountEmailEl.textContent = email;
-  if (accountPetNameEl) accountPetNameEl.textContent = petName;
+    // immediately fill panel from current globals
+  updateAccountPanel();
 
   // Elements
   const userMenuToggle = document.getElementById("userMenuToggle");
@@ -243,6 +324,13 @@ function renderPostLoginHeader(username) {
   const accountEditBtn = document.getElementById("accountEditBtn");
   const accountDeleteBtn = document.getElementById("accountDeleteBtn");
 
+  const actionsRow = accountPanel.querySelector(".account-actions");
+  const editForm = document.getElementById("editAccountForm");
+  const editUsernameInput = document.getElementById("editUsername");
+  const editEmailInput = document.getElementById("editEmail");
+  const saveAccountBtn = document.getElementById("saveAccountBtn");
+  const cancelAccountBtn = document.getElementById("cancelAccountBtn");
+
   // Toggle main dropdown
   userMenuToggle.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -250,6 +338,8 @@ function renderPostLoginHeader(username) {
     // hide account panel when re-opening/closing menu
     if (!userMenuPanel.classList.contains("open")) {
       accountPanel.classList.remove("open");
+      editForm.style.display = "none";
+      actionsRow.classList.remove("hidden");
     }
   });
 
@@ -257,6 +347,11 @@ function renderPostLoginHeader(username) {
   myAccountBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     accountPanel.classList.toggle("open");
+    if (!accountPanel.classList.contains("open")) {
+      // closing account panel resets edit mode
+      editForm.style.display = "none";
+      actionsRow.classList.remove("hidden");
+    }
   });
 
   // Change password (fake for now)
@@ -271,10 +366,46 @@ function renderPostLoginHeader(username) {
     handleLogout();
   });
 
-  // Edit account (fake)
+  // Edit account (pretty panel version)
   accountEditBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    showNotification("Edit account coming soon 🛠️");
+
+    // Pre-fill current values
+    editUsernameInput.value = window.currentUsername || "";
+    editEmailInput.value = window.currentUserEmail || "";
+
+    const isOpen = editForm.style.display === "block";
+
+    if (isOpen) {
+      // closing edit mode
+      editForm.style.display = "none";
+      actionsRow.classList.remove("hidden");
+    } else {
+      // opening edit mode
+      editForm.style.display = "block";
+      actionsRow.classList.add("hidden");
+    }
+  });
+
+  // Save edited account
+  saveAccountBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    const newUsername = editUsernameInput.value.trim();
+    const newEmail = editEmailInput.value.trim();
+
+    updateAccountOnServer(newUsername, newEmail);
+
+    // Close form after save
+    editForm.style.display = "none";
+    actionsRow.classList.remove("hidden");
+  });
+
+  // Cancel button
+  cancelAccountBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    editForm.style.display = "none";
+    actionsRow.classList.remove("hidden");
   });
 
   // Delete account (fake)
@@ -284,23 +415,26 @@ function renderPostLoginHeader(username) {
   });
 
   // Click outside closes both dropdown + account panel
-  document.addEventListener(
-    "click",
-    function handleOutside(e) {
-      if (
-        !userMenuPanel.contains(e.target) &&
-        !accountPanel.contains(e.target) &&
-        !userMenuToggle.contains(e.target)
-      ) {
-        userMenuPanel.classList.remove("open");
-        accountPanel.classList.remove("open");
-      }
-    },
-    { once: true }
-  );
+  document.addEventListener("click", function (e) {
+  const clickedInsideMenu =
+    userMenuToggle.contains(e.target) ||
+    userMenuPanel.contains(e.target) ||
+    accountPanel.contains(e.target);
+
+  if (!clickedInsideMenu) {
+    // Close dropdown
+    userMenuPanel.classList.remove("open");
+
+    // Close account panel
+    accountPanel.classList.remove("open");
+
+    // Close edit mode
+    editForm.style.display = "none";
+    actionsRow.classList.remove("hidden");
+  }
+});
+
 }
-
-
 
 // HIDING HEADER
 let lastScroll = 0;
@@ -357,7 +491,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  dots.forEach(dot => {
+  dots.forEach((dot) => {
     dot.addEventListener("click", () => {
       const index = parseInt(dot.dataset.index, 10);
       showSlide(index);
@@ -369,7 +503,6 @@ document.addEventListener("DOMContentLoaded", () => {
   showSlide(0);
   startAutoRotate();
 });
-
 
 /* ============================
    PET INFO
@@ -390,13 +523,28 @@ function fetchPetInfo() {
   fetch("/ajax-user-pets/")
     .then((res) => res.json())
     .then((data) => {
-      if (data.length > 0) {
-        petInfo = data[0]; // assuming first pet
-        petInfo.id && (document.getElementById("petId").value = petInfo.id);
-        petIdInput.value = petInfo.id;
+      if (Array.isArray(data) && data.length > 0) {
+        // assuming first pet is the "main" one
+        petInfo = data[0];
+
+        if (petInfo.id) {
+          const hiddenPetIdInput = document.getElementById("petId");
+          if (hiddenPetIdInput) {
+            hiddenPetIdInput.value = petInfo.id;
+          }
+          if (typeof petIdInput !== "undefined" && petIdInput) {
+            petIdInput.value = petInfo.id;
+          }
+        }
+
+        // 🔹 keep global pet name + My Account panel in sync
+        setCurrentPetName(petInfo.name);
       } else {
         petInfo = {};
+        // no pets -> clear the label in My Account
+        setCurrentPetName(null);
       }
+
       displayPetInfo();
     })
     .catch((err) => console.error("Error fetching pet info:", err));
@@ -414,19 +562,24 @@ function displayPetInfo() {
     return;
   }
 
-  backPetBtn.style.display = 'inline-block';
+  backPetBtn.style.display = "inline-block";
   document.getElementById("petId").value = petInfo.id || "";
 
   // Build collapsible content
   petInfoContent.innerHTML = `
     <div class="pet-header">
-      <span><strong>${petInfo.name ? petInfo.name.charAt(0).toUpperCase() + petInfo.name.slice(1).toLowerCase() : "Unnamed Pet"}</strong></span>
+      <span><strong>${petInfo.name
+      ? petInfo.name.charAt(0).toUpperCase() +
+      petInfo.name.slice(1).toLowerCase()
+      : "Unnamed Pet"
+    }</strong></span>
       <span class="arrow">▶</span>
     </div>
     <div class="pet-content">
       <strong>Type:</strong> ${petInfo.type}<br>
       <strong>Age:</strong> ${petInfo.age}<br>
-      <strong>Weight:</strong> ${petInfo.weight != null ? petInfo.weight : "—"}<br>
+      <strong>Weight:</strong> ${petInfo.weight != null ? petInfo.weight : "—"
+    }<br>
       <strong>Breed:</strong> ${petInfo.breed || "—"}<br>
       <strong>Surgery Date:</strong> ${petInfo.surgery_date || "—"}<br>
       <strong>Surgery:</strong> ${petInfo.surgery_type || "—"}<br> 
@@ -443,37 +596,39 @@ function displayPetInfo() {
   rightBoxes.style.display = "flex";
   document.getElementById("logHistoryDisplay").style.display = "block";
 
-  const petHeader = petInfoContent.querySelector('.pet-header');
-  const petContent = petInfoContent.querySelector('.pet-content');
-  const arrow = petInfoContent.querySelector('.arrow');
+  const petHeader = petInfoContent.querySelector(".pet-header");
+  const petContent = petInfoContent.querySelector(".pet-content");
+  const arrow = petInfoContent.querySelector(".arrow");
 
   // start minimized
-  petContent.style.display = 'none';
-  arrow.style.transform = 'rotate(0deg)';
+  petContent.style.display = "none";
+  arrow.style.transform = "rotate(0deg)";
 
   // toggle collapse/expand
-  petHeader.addEventListener('click', () => {
-    const isActive = petContent.style.display === '';
-    petContent.style.display = isActive ? 'none' : '';
-    arrow.style.transform = isActive ? 'rotate(0deg)' : 'rotate(90deg)';
+  petHeader.addEventListener("click", () => {
+    const isActive = petContent.style.display === "";
+    petContent.style.display = isActive ? "none" : "";
+    arrow.style.transform = isActive ? "rotate(0deg)" : "rotate(90deg)";
   });
 
   // Edit button behavior
-  document.getElementById('editPetInfo').addEventListener('click', () => {
-    petInfoWrapper.style.display = 'block';
+  document.getElementById("editPetInfo").addEventListener("click", () => {
+    petInfoWrapper.style.display = "block";
     petType.value = petInfo.type;
-    document.getElementById('petName').value = petInfo.name || '';
-    document.getElementById('petAge').value = petInfo.age;
-    document.getElementById('weight').value = petInfo.weight != null ? petInfo.weight : '';
+    document.getElementById("petName").value = petInfo.name || "";
+    document.getElementById("petAge").value = petInfo.age;
+    document.getElementById("weight").value =
+      petInfo.weight != null ? petInfo.weight : "";
     breedSelect.value = petInfo.breed;
-    document.getElementById('surgeryType').value = petInfo.surgery_type || '';
-    document.getElementById('surgeryDate').value = petInfo.surgery_date || '';
-    document.getElementById('surgeryReason').value = petInfo.surgery_reason || '';
-    petInfoDisplay.style.display = 'none';
-    vetInfoDisplay.style.display = 'none';
-    galleryDisplay.style.display = 'none';
-    rightBoxes.style.display = 'none';
-    document.getElementById('logHistoryDisplay').style.display = 'none';
+    document.getElementById("surgeryType").value = petInfo.surgery_type || "";
+    document.getElementById("surgeryDate").value = petInfo.surgery_date || "";
+    document.getElementById("surgeryReason").value =
+      petInfo.surgery_reason || "";
+    petInfoDisplay.style.display = "none";
+    vetInfoDisplay.style.display = "none";
+    galleryDisplay.style.display = "none";
+    rightBoxes.style.display = "none";
+    document.getElementById("logHistoryDisplay").style.display = "none";
   });
 
   // fetch logs if pet exists
@@ -481,7 +636,6 @@ function displayPetInfo() {
     fetchPetLogs(petInfo.id);
   }
 }
-
 
 petInfoForm.addEventListener("submit", function (e) {
   e.preventDefault();
@@ -542,21 +696,21 @@ loadDogBreeds();
 
 document.addEventListener("DOMContentLoaded", () => {
   // ----- elements -----
-  const container     = document.getElementById("vetInfoDisplay");
-  const summaryRow    = document.getElementById("vetInfoSummary");
+  const container = document.getElementById("vetInfoDisplay");
+  const summaryRow = document.getElementById("vetInfoSummary");
   const summaryDateEl = document.getElementById("vetSummaryDate");
-  const arrowEl       = document.querySelector(".vet-summary-arrow");
-  const form          = document.getElementById("vetInfoForm");
+  const arrowEl = document.querySelector(".vet-summary-arrow");
+  const form = document.getElementById("vetInfoForm");
 
-  const inputDate   = document.getElementById("next_appointment");
+  const inputDate = document.getElementById("next_appointment");
   const inputClinic = document.getElementById("clinic_name");
-  const inputPhone  = document.getElementById("phone");
-  const inputEmail  = document.getElementById("email");
+  const inputPhone = document.getElementById("phone");
+  const inputEmail = document.getElementById("email");
 
   // ----- state -----
-  let cardEl = null;          // read-only card node
-  let isOpen = false;         // expanded/collapsed
-  let currentVet = null;      // last fetched/saved vet info (per session, not localStorage)
+  let cardEl = null; // read-only card node
+  let isOpen = false; // expanded/collapsed
+  let currentVet = null; // last fetched/saved vet info (per session, not localStorage)
 
   // Start collapsed
   form.style.display = "none";
@@ -590,7 +744,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function localToISO(datetimeLocal) {
-    if (!datetimeLocal) return null;       // "2025-11-09T17:45"
+    if (!datetimeLocal) return null; // "2025-11-09T17:45"
     const d = new Date(datetimeLocal);
     return isNaN(d) ? null : d.toISOString();
   }
@@ -601,7 +755,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!iso) return "";
     const d = new Date(iso);
     if (isNaN(d)) return "";
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+      d.getDate()
+    )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
   function hasAnyField(data) {
@@ -617,9 +773,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------- UI helpers ----------
   function fillForm(data) {
     inputClinic.value = data?.clinic_name || "";
-    inputPhone.value  = data?.phone || "";
-    inputEmail.value  = data?.email || "";
-    inputDate.value   = isoToDatetimeLocalValue(data?.next_appointment);
+    inputPhone.value = data?.phone || "";
+    inputEmail.value = data?.email || "";
+    inputDate.value = isoToDatetimeLocalValue(data?.next_appointment);
   }
 
   function setSummary(nextISO) {
@@ -631,7 +787,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function removeCard() {
-    if (cardEl) { cardEl.remove(); cardEl = null; }
+    if (cardEl) {
+      cardEl.remove();
+      cardEl = null;
+    }
   }
 
   function showCard() {
@@ -646,16 +805,14 @@ document.addEventListener("DOMContentLoaded", () => {
     cardEl.innerHTML = `
       <div><strong>Clinic:<br></strong> ${data.clinic_name || "—"}</div>
       <div><strong>Phone:</strong><br>
-      ${
-      data.phone
+      ${data.phone
         ? `<a href="tel:${data.phone}" class="vet-link">📞 ${data.phone}</a>`
         : "—"
       }
       </div>
 
       <div><strong>Email:</strong><br>
-      ${
-        data.email
+      ${data.email
         ? `<a href="mailto:${data.email}" class="vet-link">📧 ${data.email}</a>`
         : "—"
       }
@@ -691,7 +848,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchVetInfo() {
     const res = await fetch("/vet-info/", {
       method: "GET",
-      headers: { "Accept": "application/json" },
+      headers: { Accept: "application/json" },
       credentials: "same-origin",
       cache: "no-store",
     });
@@ -708,7 +865,7 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: {
         "Content-Type": "application/json",
         "X-CSRFToken": getCookie("csrftoken"),
-        "Accept": "application/json",
+        Accept: "application/json",
       },
       credentials: "same-origin",
       body: JSON.stringify(payload),
@@ -806,10 +963,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Expose to other modules (login/logout handlers)
   window.displayVetInfo = displayVetInfo; // use after login
-  window.resetVetUI = resetVetUI; 
-  displayVetInfo();        // use on logout
+  window.resetVetUI = resetVetUI;
+  displayVetInfo(); // use on logout
 });
-
 
 /* ============================
    DAILY LOGS
@@ -818,25 +974,25 @@ function fetchPetLogs(petId) {
   if (!petId) return;
 
   fetch(`/ajax-pet-logs/${petId}/`)
-    .then(res => res.json())
-    .then(data => {
+    .then((res) => res.json())
+    .then((data) => {
       if (!data.success || !data.logs.length) {
         logs = [];
         displayLogs(); // show "No logs yet" from your current displayLogs()
         return;
       }
-      logs = data.logs.map(log => ({
+      logs = data.logs.map((log) => ({
         id: log.id,
         date: log.date,
         food: log.food,
         energy: log.energy,
         notes: log.notes,
         meds: log.meds,
-        photo: log.photo_url
+        photo: log.photo_url,
       }));
       displayLogs();
     })
-    .catch(err => console.error("Error fetching pet logs:", err));
+    .catch((err) => console.error("Error fetching pet logs:", err));
 }
 
 /* ============================
@@ -890,19 +1046,19 @@ document.getElementById("add-med").addEventListener("click", () => {
   const wrapper = document.getElementById("medications-wrapper");
   const firstRow = wrapper.querySelector(".med-row");
   const newRow = firstRow.cloneNode(true);
-  newRow.querySelectorAll("input").forEach(input => input.value = "");
+  newRow.querySelectorAll("input").forEach((input) => (input.value = ""));
   wrapper.appendChild(newRow);
 });
 
 // Display logs
 let logsExpanded = false;
 function displayLogs() {
-  const logList = document.getElementById('logList');
-  logList.innerHTML = '';
+  const logList = document.getElementById("logList");
+  logList.innerHTML = "";
 
   // 🐾 Wrap the whole logs section
-  const wrapper = document.createElement('div');
-  wrapper.className = 'logs-wrapper';
+  const wrapper = document.createElement("div");
+  wrapper.className = "logs-wrapper";
 
   wrapper.innerHTML = `
     <div class="log-section-header">
@@ -912,27 +1068,26 @@ function displayLogs() {
     <div class="log-section-content"></div>
   `;
 
-  const content = wrapper.querySelector('.log-section-content');
-  const sectionArrow = wrapper.querySelector('.arrow');
+  const content = wrapper.querySelector(".log-section-content");
+  const sectionArrow = wrapper.querySelector(".arrow");
 
   // Restore expand/collapse state
-if (logsExpanded) {
-  content.style.display = 'block';
-  sectionArrow.style.transform = 'rotate(90deg)';
-} else {
-  content.style.display = 'none';
-  sectionArrow.style.transform = 'rotate(0deg)';
-}
-
+  if (logsExpanded) {
+    content.style.display = "block";
+    sectionArrow.style.transform = "rotate(90deg)";
+  } else {
+    content.style.display = "none";
+    sectionArrow.style.transform = "rotate(0deg)";
+  }
 
   // Build individual log entries
   logs.forEach((log, idx) => {
     const medStr = log.meds
-      .map(m => `${m.name || "—"} (${m.dosage || 0}mg x ${m.times || 0})`)
-      .join(', ');
+      .map((m) => `${m.name || "—"} (${m.dosage || 0}mg x ${m.times || 0})`)
+      .join(", ");
 
-    const div = document.createElement('div');
-    div.className = 'log-entry';
+    const div = document.createElement("div");
+    div.className = "log-entry";
     div.innerHTML = `
       <div class="log-header">
         <span>${log.date}</span>
@@ -943,70 +1098,77 @@ if (logsExpanded) {
         <strong>Medicine:</strong> ${medStr}<br>
         <strong>Energy:</strong> ${log.energy}<br>
         <strong>Notes:</strong> ${log.notes || "—"}<br>
-        ${log.photo ? `<img src="${log.photo}" alt="Pet Photo" class="log-photo">` : ''}<br>
+        ${log.photo
+        ? `<img src="${log.photo}" alt="Pet Photo" class="log-photo">`
+        : ""
+      }<br>
         <button type="button" class="primary-btn edit-log-btn" data-index="${idx}">Edit</button>
         <button type="button" class="primary-btn delete-log-btn" data-index="${idx}">Delete</button>
       </div>
     `;
 
-    const logHeader = div.querySelector('.log-header');
+    const logHeader = div.querySelector(".log-header");
 
     // Toggle log details with class
-    logHeader.addEventListener('click', (e) => {
-      if (e.target.closest('button')) return; // ignore clicks on buttons
-      div.classList.toggle('active');
+    logHeader.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return; // ignore clicks on buttons
+      div.classList.toggle("active");
     });
 
     content.appendChild(div);
   });
 
   // Section toggle
-  const sectionHeader = wrapper.querySelector('.log-section-header');
-  sectionHeader.addEventListener('click', () => {
-  const isVisible = content.style.display === 'block';
+  const sectionHeader = wrapper.querySelector(".log-section-header");
+  sectionHeader.addEventListener("click", () => {
+    const isVisible = content.style.display === "block";
 
-  logsExpanded = !isVisible; // ✅ store state
+    logsExpanded = !isVisible; // ✅ store state
 
-  content.style.display = logsExpanded ? 'block' : 'none';
-  sectionArrow.style.transform = logsExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+    content.style.display = logsExpanded ? "block" : "none";
+    sectionArrow.style.transform = logsExpanded
+      ? "rotate(90deg)"
+      : "rotate(0deg)";
 
-  if (!logsExpanded) {
-    content.querySelectorAll('.log-entry').forEach(entry => {
-      entry.classList.remove('active');
-    });
-  }
-});
-
+    if (!logsExpanded) {
+      content.querySelectorAll(".log-entry").forEach((entry) => {
+        entry.classList.remove("active");
+      });
+    }
+  });
 
   logList.appendChild(wrapper);
 
   setupEditDelete();
 
   // Reattach edit/delete buttons
-  wrapper.querySelectorAll('.edit-log-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+  wrapper.querySelectorAll(".edit-log-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
       e.stopPropagation(); // prevent toggling when editing
       const idx = btn.dataset.index;
       const log = logs[idx];
       editIndex = idx;
-      addLogBtn.innerText = 'Done';
+      addLogBtn.innerText = "Done";
       showForm(dailyLogWrapper);
 
-      document.getElementById('date').value = log.date;
-      document.getElementById('food').value = log.food;
-      document.getElementById('energy').value = log.energy;
-      document.getElementById('notes').value = log.notes || '';
-      photoInput.value = '';
+      document.getElementById("date").value = log.date;
+      document.getElementById("food").value = log.food;
+      document.getElementById("energy").value = log.energy;
+      document.getElementById("notes").value = log.notes || "";
+      photoInput.value = "";
 
-      const medsWrapper = document.getElementById('medications-wrapper');
-      medsWrapper.innerHTML = '';
-      log.meds.forEach(med => {
-        const row = document.createElement('div');
-        row.className = 'med-row flex-row';
+      const medsWrapper = document.getElementById("medications-wrapper");
+      medsWrapper.innerHTML = "";
+      log.meds.forEach((med) => {
+        const row = document.createElement("div");
+        row.className = "med-row flex-row";
         row.innerHTML = `
-          <input type="text" class="medName" placeholder="Medicine Name" value="${med.name || ''}">
-          <input type="number" class="medDosage" placeholder="Dosage (mg)" value="${med.dosage || ''}">
-          <input type="number" class="medTimes" placeholder="Times per Day" value="${med.times || ''}">
+          <input type="text" class="medName" placeholder="Medicine Name" value="${med.name || ""
+          }">
+          <input type="number" class="medDosage" placeholder="Dosage (mg)" value="${med.dosage || ""
+          }">
+          <input type="number" class="medTimes" placeholder="Times per Day" value="${med.times || ""
+          }">
         `;
         medsWrapper.appendChild(row);
       });
@@ -1014,15 +1176,11 @@ if (logsExpanded) {
   });
 }
 
-
-
-
-
 // Setup Edit/Delete buttons
 function setupEditDelete() {
   // Edit log
-  document.querySelectorAll(".edit-log-btn").forEach(btn => {
-    btn.addEventListener("click", e => {
+  document.querySelectorAll(".edit-log-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const idx = btn.dataset.index;
       const log = logs[idx];
@@ -1038,18 +1196,23 @@ function setupEditDelete() {
 
       const wrapper = document.getElementById("medications-wrapper");
       wrapper.innerHTML = "";
-      log.meds.forEach(med => {
+      log.meds.forEach((med) => {
         const row = document.createElement("div");
         row.className = "med-row flex-row";
         row.innerHTML = `
-          <input type="text" class="medName" placeholder="Medicine Name" value="${med.name || ""}">
-          <input type="number" class="medDosage" placeholder="Dosage (mg)" value="${med.dosage || ""}">
-          <input type="number" class="medTimes" placeholder="Times per Day" value="${med.times || ""}">
+          <input type="text" class="medName" placeholder="Medicine Name" value="${med.name || ""
+          }">
+          <input type="number" class="medDosage" placeholder="Dosage (mg)" value="${med.dosage || ""
+          }">
+          <input type="number" class="medTimes" placeholder="Times per Day" value="${med.times || ""
+          }">
         `;
         wrapper.appendChild(row);
       });
 
-      const existingPhotoContainer = document.getElementById("existingPhotoContainer");
+      const existingPhotoContainer = document.getElementById(
+        "existingPhotoContainer"
+      );
       const photoLabel = document.getElementById("photo-label");
       if (log.photo) {
         existingPhotoContainer.innerHTML = `
@@ -1057,11 +1220,13 @@ function setupEditDelete() {
           <button type="button" id="deletePhotoBtn" class="secondary-btn">Delete Photo</button>
         `;
         photoLabel.innerText = "Upload different/new image";
-        document.getElementById("deletePhotoBtn").addEventListener("click", () => {
-          log.photo = null;
-          existingPhotoContainer.innerHTML = "";
-          photoLabel.innerText = "Photo (optional)";
-        });
+        document
+          .getElementById("deletePhotoBtn")
+          .addEventListener("click", () => {
+            log.photo = null;
+            existingPhotoContainer.innerHTML = "";
+            photoLabel.innerText = "Photo (optional)";
+          });
       } else {
         existingPhotoContainer.innerHTML = "";
         photoLabel.innerText = "Photo (optional)";
@@ -1070,52 +1235,58 @@ function setupEditDelete() {
   });
 
   // Delete log
-  document.querySelectorAll(".delete-log-btn").forEach(btn => {
-  btn.addEventListener("click", e => {
-    e.stopPropagation();
-    const idx = btn.dataset.index;
-    const logId = logs[idx].id;
+  document.querySelectorAll(".delete-log-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const idx = btn.dataset.index;
+      const logId = logs[idx].id;
 
-    if (!logId) return showNotification("Cannot delete log: no ID", "error");
+      if (!logId) return showNotification("Cannot delete log: no ID", "error");
 
-    showConfirm("Are you sure you want to delete this log?").then(confirmed => {
-      if (!confirmed) return;
+      showConfirm("Are you sure you want to delete this log?").then(
+        (confirmed) => {
+          if (!confirmed) return;
 
-      const formData = new FormData();
-      formData.append("csrfmiddlewaretoken", getCookie("csrftoken"));
+          const formData = new FormData();
+          formData.append("csrfmiddlewaretoken", getCookie("csrftoken"));
 
-      fetch(`/ajax-delete-log/${logId}/`, {
-        method: "POST",
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          logs.splice(idx, 1); // remove from frontend array
-          localStorage.setItem("petLogs", JSON.stringify(logs));
-          displayLogs();
-          showNotification("Log deleted successfully!");
-        } else {
-          showNotification("Failed to delete log: " + (data.error || ""), "error");
+          fetch(`/ajax-delete-log/${logId}/`, {
+            method: "POST",
+            body: formData,
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.success) {
+                logs.splice(idx, 1); // remove from frontend array
+                localStorage.setItem("petLogs", JSON.stringify(logs));
+                displayLogs();
+                showNotification("Log deleted successfully!");
+              } else {
+                showNotification(
+                  "Failed to delete log: " + (data.error || ""),
+                  "error"
+                );
+              }
+            })
+            .catch((err) => {
+              console.error("Delete fetch error:", err);
+              showNotification("Error deleting log", "error");
+            });
         }
-      })
-      .catch(err => {
-        console.error("Delete fetch error:", err);
-        showNotification("Error deleting log", "error");
-      });
+      );
     });
   });
-});
-
 }
 
 // Submit/ edit log
-logForm.addEventListener("submit", e => {
+logForm.addEventListener("submit", (e) => {
   e.preventDefault();
 
   const logDateInput = document.getElementById("date").value;
   const logDate = new Date(logDateInput);
-  const surgeryDate = petInfo.surgery_date ? new Date(petInfo.surgery_date) : null;
+  const surgeryDate = petInfo.surgery_date
+    ? new Date(petInfo.surgery_date)
+    : null;
 
   if (surgeryDate && logDate < surgeryDate) {
     return showNotification("Log date cannot be before surgery date", "error");
@@ -1123,7 +1294,7 @@ logForm.addEventListener("submit", e => {
 
   // Gather medications
   const medRows = document.querySelectorAll("#medications-wrapper .med-row");
-  const meds = Array.from(medRows).map(row => ({
+  const meds = Array.from(medRows).map((row) => ({
     name: row.querySelector(".medName").value || "",
     dosage: row.querySelector(".medDosage").value || "",
     times: row.querySelector(".medTimes").value || "",
@@ -1143,8 +1314,8 @@ logForm.addEventListener("submit", e => {
 
     if (photoData) {
       fetch(photoData)
-        .then(res => res.blob())
-        .then(blob => {
+        .then((res) => res.blob())
+        .then((blob) => {
           formData.append("photo", blob, file.name);
           sendLogRequest();
         });
@@ -1159,11 +1330,11 @@ logForm.addEventListener("submit", e => {
         : "/ajax-create-log/";
       const method = "POST"; // ✅ always POST, even for edit
 
-
       fetch(url, { method, body: formData })
-        .then(res => res.json())
-        .then(data => {
-          if (!data.success) return showNotification("Error: " + JSON.stringify(data.errors));
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.success)
+            return showNotification("Error: " + JSON.stringify(data.errors));
           const newId = data.id ?? data.log_id;
 
           const newLog = {
@@ -1199,7 +1370,7 @@ logForm.addEventListener("submit", e => {
           dailyLogWrapper.style.display = "none";
           displayPetInfo();
         })
-        .catch(err => console.error("Fetch error:", err));
+        .catch((err) => console.error("Fetch error:", err));
     }
   };
 
@@ -1207,14 +1378,12 @@ logForm.addEventListener("submit", e => {
   else finalizeLog(null);
 });
 
-
-
 // Handle surgery date changes
 function surgeryDateChanged(newDate) {
   if (!newDate) return;
 
   const surgery = new Date(newDate);
-  logs.forEach(log => {
+  logs.forEach((log) => {
     const logD = new Date(log.date);
     if (logD < surgery) {
       log.date = newDate; // adjust log date to surgery date
@@ -1235,13 +1404,16 @@ document.getElementById("copyAllBtn").addEventListener("click", () => {
 
   const wrapper = document.getElementById("medications-wrapper");
   wrapper.innerHTML = "";
-  lastLog.meds.forEach(med => {
+  lastLog.meds.forEach((med) => {
     const row = document.createElement("div");
     row.className = "med-row flex-row";
     row.innerHTML = `
-      <input type="text" class="medName" placeholder="Medicine Name" value="${med.name || ""}">
-      <input type="number" class="medDosage" placeholder="Dosage (mg)" value="${med.dosage || ""}">
-      <input type="number" class="medTimes" placeholder="Times per Day" value="${med.times || ""}">
+      <input type="text" class="medName" placeholder="Medicine Name" value="${med.name || ""
+      }">
+      <input type="number" class="medDosage" placeholder="Dosage (mg)" value="${med.dosage || ""
+      }">
+      <input type="number" class="medTimes" placeholder="Times per Day" value="${med.times || ""
+      }">
     `;
     wrapper.appendChild(row);
   });
@@ -1265,12 +1437,13 @@ function getCsrfToken() {
 
 async function sendAiRequest(option, questionText = "") {
   aiAnswerWrapper.style.display = "block";
-  aiAnswer.innerText = option === "summary"
-    ? "Analyzing recovery... 🤖"
-    : "Thinking about your question... 🤔";
+  aiAnswer.innerText =
+    option === "summary"
+      ? "Analyzing recovery... 🤖"
+      : "Thinking about your question... 🤔";
 
   const formData = new FormData();
-  formData.append("logs", JSON.stringify(logs || []));  // reuse your logs var
+  formData.append("logs", JSON.stringify(logs || [])); // reuse your logs var
   formData.append("option", option);
 
   if (option === "question" && questionText.trim()) {
@@ -1319,14 +1492,13 @@ aiFollowupBtn.addEventListener("click", () => {
   aiQuestion.value = "";
 });
 
-
 // DASHBOARD FORM LOGIC
 // ============================
 const showLogFormBtn = document.getElementById("showLogFormBtn");
 const showAIFormBtn = document.getElementById("showAIFormBtn");
 const exitLogBtn = document.getElementById("exitLogBtn");
 const exitAIBtn = document.getElementById("exitAIBtn");
-const backPetBtn = document.getElementById('exitPetInfoBtn');
+const backPetBtn = document.getElementById("exitPetInfoBtn");
 
 dailyLogWrapper.style.display = "none";
 aiSection.style.display = "none";
@@ -1348,36 +1520,35 @@ function showForm(formElement) {
 showLogFormBtn.addEventListener("click", () => showForm(dailyLogWrapper));
 showAIFormBtn.addEventListener("click", () => showForm(aiSection));
 
-
 exitLogBtn.addEventListener("click", () => {
   dailyLogWrapper.style.display = "none";
   editIndex = null; // cancel any editing
   displayPetInfo();
   displayLogs();
 });
-backPetBtn.addEventListener('click', () => {
-    // Cancel editing
-    editIndex = null;
+backPetBtn.addEventListener("click", () => {
+  // Cancel editing
+  editIndex = null;
 
-    // Restore form values from saved petInfo
-    petType.value = petInfo.type || '';
-    document.getElementById('petName').value = petInfo.name || '';
-    document.getElementById('petAge').value = petInfo.age || '';
-    document.getElementById('weight').value = petInfo.weight || '';
-    breedSelect.value = petInfo.breed || '';
-    document.getElementById('surgeryType').value = petInfo.surgeryType || '';
-    document.getElementById('surgeryReason').value = petInfo.surgeryReason || '';
+  // Restore form values from saved petInfo
+  petType.value = petInfo.type || "";
+  document.getElementById("petName").value = petInfo.name || "";
+  document.getElementById("petAge").value = petInfo.age || "";
+  document.getElementById("weight").value = petInfo.weight || "";
+  breedSelect.value = petInfo.breed || "";
+  document.getElementById("surgeryType").value = petInfo.surgeryType || "";
+  document.getElementById("surgeryReason").value = petInfo.surgeryReason || "";
 
-    petInfoWrapper.style.display = 'none';
-    displayPetInfo();
-    displayLogs();
+  petInfoWrapper.style.display = "none";
+  displayPetInfo();
+  displayLogs();
 });
 exitAIBtn.addEventListener("click", () => {
   aiSection.style.display = "none";
   if (aiAnswer) aiAnswer.innerText = "";
   if (aiAnswerWrapper) aiAnswerWrapper.style.display = "none";
 
-    // Clear follow-up question textarea
+  // Clear follow-up question textarea
   if (aiQuestion) aiQuestion.value = "";
   // ✅ restore everything dashboard-related
   displayPetInfo();
@@ -1396,7 +1567,7 @@ function showNotification(message, type = "success", duration = 3000) {
   setTimeout(() => {
     notif.classList.remove("show");
     notif.classList.add("hide");
-    setTimeout(() => notif.style.display = "none", 300); // hide after animation
+    setTimeout(() => (notif.style.display = "none"), 300); // hide after animation
   }, duration);
 }
 function showConfirm(message) {
@@ -1414,12 +1585,16 @@ function showConfirm(message) {
       noBtn.removeEventListener("click", noHandler);
     };
 
-    const yesHandler = () => { cleanup(); resolve(true); };
-    const noHandler = () => { cleanup(); resolve(false); };
+    const yesHandler = () => {
+      cleanup();
+      resolve(true);
+    };
+    const noHandler = () => {
+      cleanup();
+      resolve(false);
+    };
 
     yesBtn.addEventListener("click", yesHandler);
     noBtn.addEventListener("click", noHandler);
   });
 }
-
-
