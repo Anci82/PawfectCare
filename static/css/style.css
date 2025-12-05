@@ -359,6 +359,7 @@ header .header-right .btn-group {
   padding: 0.25rem 0.7rem;
   font-size: 0.85rem;
   margin-top: 1rem;
+  
 }
 
 
@@ -563,6 +564,11 @@ header .header-right button:hover {
   padding: 0.25rem 0.6rem;
 }
 
+.edit-account-form button, .password-form button {
+  background-color: rgb(149, 183, 199)!important; /* same as header/footer */
+  color: white!important;
+}
+
 /* red-ish delete button */
 .danger-btn {
   background-color: indianred !important;
@@ -574,7 +580,7 @@ header .header-right button:hover {
   display: none;
   margin-top: 1rem;
   padding: 1rem;
-  background: #f5f7fa;
+  background: linear-gradient(135deg, #fdfcfb, rgb(238, 223, 196));
   border-radius: 8px;
   animation: fadeIn 0.25s ease;
 }
@@ -607,9 +613,8 @@ header .header-right button:hover {
   display: none;
   margin-top: 0.75rem;
   padding: 0.6rem 0.7rem;
-  background: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(135deg, #fdfcfb, rgb(238, 223, 196));
   border-radius: 8px;
-  border: 1px solid rgba(149, 183, 199, 0.6);
 }
 
 .password-form h5 {

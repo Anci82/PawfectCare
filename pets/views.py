@@ -177,6 +177,32 @@ def change_password(request):
 
     return JsonResponse({"success": True, "message": "Password changed successfully"})
 
+@csrf_exempt
+@login_required
+def delete_account(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST required"}, status=400)
+
+    password = (request.POST.get("password") or "").strip()
+    user = request.user
+
+    if not password:
+        return JsonResponse(
+            {"success": False, "error": "Password is required to delete account"},
+            status=400,
+        )
+
+    if not user.check_password(password):
+        return JsonResponse(
+            {"success": False, "error": "Incorrect password"},
+            status=400,
+        )
+
+    # Delete the user; related objects with on_delete=CASCADE will be cleaned up
+    user.delete()
+
+    return JsonResponse({"success": True})
+
 
 
 

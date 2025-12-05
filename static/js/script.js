@@ -308,10 +308,10 @@ function renderPostLoginHeader(username) {
         <div class="account-info-row"><strong>Pet name:</strong> <span id="accountPetName"></span></div>
 
         <div class="account-actions">
-          <button type="button" id="accountEditBtn" class="secondary-btn smallbtn">
+          <button type="button" id="accountEditBtn" class="primary-btn smallbtn">
             Edit account
           </button>
-          <button type="button" id="accountDeleteBtn" class="secondary-btn smallbtn danger-btn">
+          <button type="button" id="accountDeleteBtn" class="primary-btn smallbtn danger-btn">
             Delete account
           </button>
         </div>
@@ -327,7 +327,7 @@ function renderPostLoginHeader(username) {
 
           <div class="edit-actions">
             <button id="saveAccountBtn" class="primary-btn smallbtn">Save</button>
-            <button id="cancelAccountBtn" class="secondary-btn smallbtn">Cancel</button>
+            <button id="cancelAccountBtn" class="primary-btn smallbtn">Cancel</button>
           </div>
         </div>
 
@@ -345,7 +345,7 @@ function renderPostLoginHeader(username) {
 
           <div class="edit-actions">
             <button id="savePasswordBtn" class="primary-btn smallbtn">Save</button>
-            <button id="cancelPasswordBtn" class="secondary-btn smallbtn">Cancel</button>
+            <button id="cancelPasswordBtn" class="primary-btn smallbtn">Cancel</button>
           </div>
         </div>
       </div>
@@ -501,11 +501,29 @@ changePasswordBtn.addEventListener("click", (e) => {
     actionsRow.classList.remove("hidden");
   });
 
-  // Delete account (still fake)
-  accountDeleteBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    showNotification("Delete account feature coming soon 🐾", "error");
-  });
+  // Delete account (real)
+// Delete account (using custom modals)
+accountDeleteBtn.addEventListener("click", async (e) => {
+  e.stopPropagation();
+
+  const confirmDelete = await showConfirm(
+    "Are you sure you want to delete your account? This cannot be undone."
+  );
+
+  if (!confirmDelete) {
+    return;
+  }
+
+  const password = await showPasswordPrompt();
+  if (!password) {
+    showNotification("Account deletion cancelled.", "error");
+    return;
+  }
+
+  deleteAccountOnServer(password);
+});
+
+
 
   // Single click-outside handler
   document.addEventListener("click", function (e) {
@@ -521,6 +539,34 @@ changePasswordBtn.addEventListener("click", (e) => {
     }
   });
 }
+// DELETE ACCOUNT/* ============================
+
+function deleteAccountOnServer(password) {
+  const formData = new FormData();
+  formData.append("password", password);
+  formData.append("csrfmiddlewaretoken", getCookie("csrftoken"));
+
+  fetch("/delete-account/", {
+    method: "POST",
+    body: formData,
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success) {
+        showNotification("Your account has been deleted 💔🐾", "success", 4000);
+        // reuse existing logout logic
+        handleLogout();
+      } else {
+        showNotification(data.error || "Account deletion failed.", "error");
+      }
+    })
+    .catch((err) => {
+      console.error("Delete account error:", err);
+      showNotification("Network error while deleting account.", "error");
+    });
+}
+
+
 
 
 // HIDING HEADER
@@ -1679,6 +1725,37 @@ function showConfirm(message) {
     const noHandler = () => {
       cleanup();
       resolve(false);
+    };
+
+    yesBtn.addEventListener("click", yesHandler);
+    noBtn.addEventListener("click", noHandler);
+  });
+}
+function showPasswordPrompt() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("passwordPrompt");
+    const input = document.getElementById("passwordPromptInput");
+    const yesBtn = document.getElementById("passwordPromptYes");
+    const noBtn = document.getElementById("passwordPromptNo");
+
+    input.value = ""; // clear any previous value
+    modal.classList.add("show");
+
+    const cleanup = () => {
+      modal.classList.remove("show");
+      yesBtn.removeEventListener("click", yesHandler);
+      noBtn.removeEventListener("click", noHandler);
+    };
+
+    const yesHandler = () => {
+      const value = input.value.trim();
+      cleanup();
+      resolve(value || null);
+    };
+
+    const noHandler = () => {
+      cleanup();
+      resolve(null);
     };
 
     yesBtn.addEventListener("click", yesHandler);
