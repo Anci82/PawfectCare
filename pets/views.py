@@ -22,6 +22,10 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.password_validation import validate_password
+
+
 
 from .ai_utils import call_gemini_model          # your Gemini caller
 from .utils_ai import compute_recovery_flags     # helper above
@@ -123,6 +127,56 @@ def update_account(request):
         "username": user.username,
         "email": user.email,
     })
+@csrf_exempt
+@login_required
+def change_password(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST required"}, status=400)
+
+    current_password = (request.POST.get("current_password") or "").strip()
+    new_password1 = (request.POST.get("new_password1") or "").strip()
+    new_password2 = (request.POST.get("new_password2") or "").strip()
+
+    user = request.user
+
+    if not current_password:
+        return JsonResponse(
+            {"success": False, "error": "Current password is required"},
+            status=400,
+        )
+
+    if not user.check_password(current_password):
+        return JsonResponse(
+            {"success": False, "error": "Current password is incorrect"},
+            status=400,
+        )
+
+    if not new_password1 or not new_password2:
+        return JsonResponse(
+            {"success": False, "error": "New password is required"},
+            status=400,
+        )
+
+    if new_password1 != new_password2:
+        return JsonResponse(
+            {"success": False, "error": "New passwords do not match"},
+            status=400,
+        )
+
+    try:
+        validate_password(new_password1, user=user)
+    except ValidationError as e:
+        return JsonResponse(
+            {"success": False, "error": " ".join(e.messages)},
+            status=400,
+        )
+
+    user.set_password(new_password1)
+    user.save()
+    update_session_auth_hash(request, user)  # keep user logged in
+
+    return JsonResponse({"success": True, "message": "Password changed successfully"})
+
 
 
 

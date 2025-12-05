@@ -251,6 +251,31 @@ function updateAccountOnServer(newUsername, newEmail) {
       showNotification("Account update failed (network error)");
     });
 }
+function changePasswordOnServer(currentPassword, newPassword1, newPassword2) {
+  const formData = new FormData();
+  formData.append("current_password", currentPassword);
+  formData.append("new_password1", newPassword1);
+  formData.append("new_password2", newPassword2);
+  formData.append("csrfmiddlewaretoken", getCookie("csrftoken"));
+
+  return fetch("/change-password/", {
+    method: "POST",
+    body: formData,
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success) {
+        showNotification("Password updated ✅");
+      } else {
+        showNotification("Password change failed: " + data.error);
+      }
+      return data;
+    })
+    .catch((err) => {
+      console.error("Change password error:", err);
+      showNotification("Password change failed (network error)");
+    });
+}
 
 /* ============================
    HEADER AFTER LOGIN
@@ -305,12 +330,29 @@ function renderPostLoginHeader(username) {
             <button id="cancelAccountBtn" class="secondary-btn smallbtn">Cancel</button>
           </div>
         </div>
+
+        <div class="password-form" id="passwordForm">
+          <h5>Change password</h5>
+
+          <label>Current password</label>
+          <input type="password" id="currentPasswordInput" class="edit-input" />
+
+          <label>New password</label>
+          <input type="password" id="newPassword1Input" class="edit-input" />
+
+          <label>Repeat new password</label>
+          <input type="password" id="newPassword2Input" class="edit-input" />
+
+          <div class="edit-actions">
+            <button id="savePasswordBtn" class="primary-btn smallbtn">Save</button>
+            <button id="cancelPasswordBtn" class="secondary-btn smallbtn">Cancel</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
 
-
-    // immediately fill panel from current globals
+  // Fill panel from globals
   updateAccountPanel();
 
   // Elements
@@ -331,15 +373,28 @@ function renderPostLoginHeader(username) {
   const saveAccountBtn = document.getElementById("saveAccountBtn");
   const cancelAccountBtn = document.getElementById("cancelAccountBtn");
 
+  const passwordForm = document.getElementById("passwordForm");
+  const currentPasswordInput = document.getElementById("currentPasswordInput");
+  const newPassword1Input = document.getElementById("newPassword1Input");
+  const newPassword2Input = document.getElementById("newPassword2Input");
+  const savePasswordBtn = document.getElementById("savePasswordBtn");
+  const cancelPasswordBtn = document.getElementById("cancelPasswordBtn");
+
+  function resetFormsAndButtons() {
+    editForm.style.display = "none";
+    passwordForm.style.display = "none";
+    actionsRow.classList.remove("hidden");
+  }
+
   // Toggle main dropdown
   userMenuToggle.addEventListener("click", (e) => {
     e.stopPropagation();
     userMenuPanel.classList.toggle("open");
-    // hide account panel when re-opening/closing menu
+
+    // if closing dropdown, also close account panel + forms
     if (!userMenuPanel.classList.contains("open")) {
       accountPanel.classList.remove("open");
-      editForm.style.display = "none";
-      actionsRow.classList.remove("hidden");
+      resetFormsAndButtons();
     }
   });
 
@@ -348,16 +403,55 @@ function renderPostLoginHeader(username) {
     e.stopPropagation();
     accountPanel.classList.toggle("open");
     if (!accountPanel.classList.contains("open")) {
-      // closing account panel resets edit mode
-      editForm.style.display = "none";
-      actionsRow.classList.remove("hidden");
+      // closing account panel resets edit modes
+      resetFormsAndButtons();
     }
   });
 
-  // Change password (fake for now)
-  changePasswordBtn.addEventListener("click", (e) => {
+  // Change password panel
+changePasswordBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+
+  // make sure the account panel is visible
+  accountPanel.classList.add("open");
+
+  const isOpen = passwordForm.style.display === "block";
+
+  if (isOpen) {
+    passwordForm.style.display = "none";
+    actionsRow.classList.remove("hidden");
+  } else {
+    // open password form, close edit account if open
+    editForm.style.display = "none";
+    passwordForm.style.display = "block";
+    actionsRow.classList.add("hidden");
+
+    // clear fields
+    currentPasswordInput.value = "";
+    newPassword1Input.value = "";
+    newPassword2Input.value = "";
+  }
+});
+
+  // Save new password
+  savePasswordBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    showNotification("Change password coming soon 🛠️");
+
+    const currentPw = currentPasswordInput.value;
+    const newPw1 = newPassword1Input.value;
+    const newPw2 = newPassword2Input.value;
+
+    changePasswordOnServer(currentPw, newPw1, newPw2);
+
+    passwordForm.style.display = "none";
+    actionsRow.classList.remove("hidden");
+  });
+
+  // Cancel password change
+  cancelPasswordBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    passwordForm.style.display = "none";
+    actionsRow.classList.remove("hidden");
   });
 
   // Sign out from menu
@@ -366,7 +460,7 @@ function renderPostLoginHeader(username) {
     handleLogout();
   });
 
-  // Edit account (pretty panel version)
+  // Edit account panel
   accountEditBtn.addEventListener("click", (e) => {
     e.stopPropagation();
 
@@ -377,11 +471,11 @@ function renderPostLoginHeader(username) {
     const isOpen = editForm.style.display === "block";
 
     if (isOpen) {
-      // closing edit mode
       editForm.style.display = "none";
       actionsRow.classList.remove("hidden");
     } else {
-      // opening edit mode
+      // open edit form, close password form
+      passwordForm.style.display = "none";
       editForm.style.display = "block";
       actionsRow.classList.add("hidden");
     }
@@ -396,45 +490,38 @@ function renderPostLoginHeader(username) {
 
     updateAccountOnServer(newUsername, newEmail);
 
-    // Close form after save
     editForm.style.display = "none";
     actionsRow.classList.remove("hidden");
   });
 
-  // Cancel button
+  // Cancel edit account
   cancelAccountBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     editForm.style.display = "none";
     actionsRow.classList.remove("hidden");
   });
 
-  // Delete account (fake)
+  // Delete account (still fake)
   accountDeleteBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     showNotification("Delete account feature coming soon 🐾", "error");
   });
 
-  // Click outside closes both dropdown + account panel
+  // Single click-outside handler
   document.addEventListener("click", function (e) {
-  const clickedInsideMenu =
-    userMenuToggle.contains(e.target) ||
-    userMenuPanel.contains(e.target) ||
-    accountPanel.contains(e.target);
+    const clickedInsideMenu =
+      userMenuToggle.contains(e.target) ||
+      userMenuPanel.contains(e.target) ||
+      accountPanel.contains(e.target);
 
-  if (!clickedInsideMenu) {
-    // Close dropdown
-    userMenuPanel.classList.remove("open");
-
-    // Close account panel
-    accountPanel.classList.remove("open");
-
-    // Close edit mode
-    editForm.style.display = "none";
-    actionsRow.classList.remove("hidden");
-  }
-});
-
+    if (!clickedInsideMenu) {
+      userMenuPanel.classList.remove("open");
+      accountPanel.classList.remove("open");
+      resetFormsAndButtons();
+    }
+  });
 }
+
 
 // HIDING HEADER
 let lastScroll = 0;

@@ -603,6 +603,26 @@ header .header-right button:hover {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+.password-form {
+  display: none;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.7rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(149, 183, 199, 0.6);
+}
+
+.password-form h5 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+.password-form,
+.password-form * {
+  color: #000 !important;
+}
+.password-form input::placeholder {
+  color: #333 !important;
+}
 
 
 
