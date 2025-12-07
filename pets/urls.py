@@ -19,4 +19,6 @@ urlpatterns = [
     path("update-account/", views.update_account, name="update_account"),
     path("change-password/", views.change_password, name="change_password"),
     path("delete-account/", views.delete_account, name="delete_account"),
+    path("activate/<uidb64>/<token>/", views.activate_account, name="activate_account"),
+
 ]

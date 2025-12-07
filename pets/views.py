@@ -24,11 +24,41 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from django.conf import settings
+
+
 
 
 
 from .ai_utils import call_gemini_model          # your Gemini caller
 from .utils_ai import compute_recovery_flags     # helper above
+
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
+from django.shortcuts import redirect
+from django.contrib.auth import get_user_model
+
+UserModel = get_user_model()
+
+def activate_account(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = UserModel.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        # redirect to home with "activated=1"
+        return redirect("/?activated=1")
+    else:
+        # redirect to home with "activation=failed"
+        return redirect("/?activation=failed")
 
 
 
@@ -58,6 +88,8 @@ def user_login(request):
 
     user = authenticate(request, username=username, password=password)
     if user:
+        if not user.is_active:
+            return JsonResponse({"success": False, "error": "Account not activated. Please check your email."})
         login(request, user)
 
         # 🔹 Get first pet name for this owner (or None if no pets yet)
@@ -255,9 +287,8 @@ def user_register(request):
 
     # Password validation
     try:
-        validate_password(password)   # Uses validators from settings.py
+        validate_password(password)
     except ValidationError as e:
-        # Convert list of messages → single readable string
         error_message = ". ".join(e.messages)
         return JsonResponse(
             {"success": False, "error": error_message},
@@ -266,11 +297,68 @@ def user_register(request):
 
     # Create the user
     try:
-        user = User.objects.create_user(username=username, email=email, password=password)
-        return JsonResponse({"success": True, "username": user.username})
-    except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+        )
 
+        # LOCAL (DEBUG=True) -> require activation
+        # LIVE  (DEBUG=False) -> auto-activate (no email required)
+        if settings.DEBUG:
+            user.is_active = False
+        else:
+            user.is_active = True
+
+        user.save()
+
+        # ========== EMAIL FLOW ONLY IN DEBUG (LOCAL) ==========
+        if settings.DEBUG:
+            # Activation email for the user
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+
+            domain = request.get_host()
+            activate_url = f"{request.scheme}://{domain}/activate/{uid}/{token}/"
+
+            subject = "Activate your PawfectCare account"
+            message = (
+                f"Hi {user.username},\n\n"
+                f"Thank you for registering at PawfectCare.\n"
+                f"Please click the link below to activate your account:\n\n"
+                f"{activate_url}\n\n"
+                f"If you did not create this account, you can ignore this email."
+            )
+
+            # from_email = None → uses DEFAULT_FROM_EMAIL
+            send_mail(subject, message, None, [user.email])
+
+            # Optional: notify you
+            admin_email = getattr(settings, "ADMIN_NOTIFICATION_EMAIL", None)
+            if admin_email:
+                admin_subject = f"New PawfectCare user registered: {user.username}"
+                admin_message = (
+                    f"A new user has registered.\n\n"
+                    f"Username: {user.username}\n"
+                    f"Email: {user.email}\n"
+                )
+                send_mail(admin_subject, admin_message, None, [admin_email])
+
+            response_message = "Registration successful. Please check your email to activate your account."
+        else:
+            # Live: no activation email, user can log in immediately
+            response_message = "Registration successful. You can now log in."
+
+        return JsonResponse({
+            "success": True,
+            "username": user.username,
+            "message": response_message,
+        })
+
+    except Exception as e:
+        # If you want less detail on live, you can hide str(e) when not DEBUG
+        error_msg = str(e) if settings.DEBUG else "Internal server error."
+        return JsonResponse({"success": False, "error": error_msg}, status=500)
 
 
 # --------------------------

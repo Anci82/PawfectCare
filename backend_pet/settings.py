@@ -140,6 +140,20 @@ SECURE_HSTS_PRELOAD = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 2 weeks
 
+# During development – prints email to console
+from decouple import config
+
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = "no-reply@pawfectcare.local"
+else:
+    # No email sending on live right now
+    EMAIL_BACKEND = "django.core.mail.backends.dummy.EmailBackend"
+    DEFAULT_FROM_EMAIL = "no-reply@pawfectcare.local"
+
+
+
+
 
 # ----------------------------
 # DEFAULTS

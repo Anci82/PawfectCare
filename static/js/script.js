@@ -109,16 +109,22 @@ function handleRegister() {
       method: "POST",
       body: formData,
     })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          showNotification("Registration successful!");
-          renderPreLoginHeader();
-        } else {
-          showNotification("Error: " + (data.error || "Unknown error"));
-        }
-      })
-      .catch((err) => console.error("Registration fetch error:", err));
+    .then((res) => res.json())
+    .then((data) => {
+    if (data.success) {
+      const msg =
+        data.message ||
+        "Registration successful. Please check your email to activate your account.";
+      showNotification(msg);
+      // optionally: switch to login view
+      // showLoginForm();
+    } else {
+      showNotification("Registration failed: " + data.error, "error");
+    }
+  })
+  .catch(() => {
+    showNotification("Registration failed (network error)", "error");
+  });
   });
 }
 
@@ -1703,6 +1709,17 @@ function showNotification(message, type = "success", duration = 3000) {
     setTimeout(() => (notif.style.display = "none"), 300); // hide after animation
   }, duration);
 }
+
+(function checkActivationMessages() {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get("activated") === "1") {
+    showNotification("Your account has been activated. You can now log in 🎉");
+  } else if (params.get("activation") === "failed") {
+    showNotification("Activation link is invalid or has expired.", "error");
+  }
+})();
+
 function showConfirm(message) {
   return new Promise((resolve) => {
     const modal = document.getElementById("customConfirm");

@@ -996,6 +996,11 @@ header .header-right button:hover {
     flex-direction: column;
     color: white;
 }
+.srce{
+  display: inline-block;
+  animation: heartBeat 2s infinite ease-in-out;
+  font-size: 1.2rem;
+}
 
 /* Overlay on background */
 #about::before {
